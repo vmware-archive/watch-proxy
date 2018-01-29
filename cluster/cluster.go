@@ -21,19 +21,20 @@ func Version(client *kubernetes.Clientset) string {
 }
 
 // Namespaces - Get list of namespaces running on the cluster
-func Namespaces(client *kubernetes.Clientset) []string {
+func Namespaces(client *kubernetes.Clientset) {
 
-	nsData, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	// nsData, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	nsData, err := client.CoreV1().Namespaces().Watch(metav1.ListOptions{})
 	if err != nil {
 		log.Println("Could not get list of namespaces", err)
 	}
 
-	namespaces := []string{}
-	for _, ns := range nsData.Items {
-		namespaces = append(namespaces, ns.ObjectMeta.Name)
-	}
+	// namespaces := []string{}
+	// for _, ns := range nsData.Items {
+	// 	namespaces = append(namespaces, ns.ObjectMeta.Name)
+	// }
 
-	return namespaces
+	log.Println(nsData)
 }
 
 // Deployments - get list of deployments running in a specified namespace
