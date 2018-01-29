@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"clerk/inventory"
+	"github.com/heptio/clerk/inventory"
 
-	"clerk/cluster"
+	"github.com/heptio/clerk/cluster"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

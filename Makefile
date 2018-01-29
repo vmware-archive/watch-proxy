@@ -1,5 +1,5 @@
-all: deps bindata
-	go build ./...
+all: deps 
+	go build 
 
 deps: ## Install/Update depdendencies
 	dep ensure -v
