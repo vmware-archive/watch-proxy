@@ -1,0 +1,47 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: clerk-controller
+subjects:
+  - kind: ServiceAccount
+    name: clerk-controller
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: clerk-controller
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: clerk
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: clerk
+    spec:
+      serviceAccountName: clerk-controller
+      containers:
+      - name: clerk
+        image: jpweber/clerk:latest
+        resources:
+            requests:
+                memory: "128Mi"
+                cpu: "100m"
+            limits:
+                memory: "512Mi"
+                cpu: "150m"
