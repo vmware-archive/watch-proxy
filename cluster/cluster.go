@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"log"
+
 	"github.com/heptio/clerk/inventory"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,7 +14,7 @@ func Version(client *kubernetes.Clientset) string {
 
 	version, err := client.DiscoveryClient.ServerVersion()
 	if err != nil {
-		// log.Println("Could not get server version", err)
+		log.Println("Could not get server version", err)
 	}
 	return version.GitVersion
 
@@ -23,7 +25,7 @@ func Namespaces(client *kubernetes.Clientset) []string {
 
 	nsData, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
-		// log.Println("Could not get list of namespaces", err)
+		log.Println("Could not get list of namespaces", err)
 	}
 
 	namespaces := []string{}
@@ -39,9 +41,8 @@ func Namespaces(client *kubernetes.Clientset) []string {
 func Deployments(client *kubernetes.Clientset, ns string) []inventory.Deployment {
 	deployments, err := client.AppsV1beta2().Deployments(ns).List(metav1.ListOptions{})
 	if err != nil {
-		panic(err.Error())
+		log.Println("Could not get list of deployments", err)
 	}
-	// log.Println("Fetching Deployments for", ns)
 
 	// create empty array of deployments to return
 	minDeployments := []inventory.Deployment{}

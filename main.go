@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	"github.com/heptio/clerk/inventory"
-
-	"github.com/heptio/clerk/cluster"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	"github.com/heptio/clerk/cluster"
 )
 
 func main() {
@@ -48,5 +47,5 @@ func main() {
 	inv.Deployments = nsDeployments
 
 	// testing
-	fmt.Printf("%+v", inv.Deployments)
+	fmt.Printf("%+v", inv)
 }
