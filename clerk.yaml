@@ -6,7 +6,7 @@ metadata:
   name: system:serviceaccount:kube-system:clerk-controller
 rules:
 - apiGroups:
-  - ""
+  - "*"
   resources:
   - "*"
   verbs:
