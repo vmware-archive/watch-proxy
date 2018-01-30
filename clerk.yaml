@@ -51,7 +51,7 @@ spec:
       serviceAccountName: clerk-controller
       containers:
       - name: clerk
-        image: jpweber/clerk:latest
+        image: jpweber/clerk:0.1.2
         resources:
             requests:
                 memory: "128Mi"

@@ -14,6 +14,8 @@ import (
 
 func main() {
 
+	// TODO: create flag for remote endpoint to emit changes to
+
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {

@@ -13,8 +13,9 @@ type Cluster struct {
 }
 
 type Namespace struct {
-	Name        string
-	Deployments []Deployment
+	Name  string
+	Event string
+	Kind  string
 }
 
 // Deployment - type that describes deployment info
@@ -23,4 +24,5 @@ type Deployment struct {
 	Namespace       string
 	Labels          map[string]string
 	ReplicasDesired int32
+	Event           string
 }

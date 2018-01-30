@@ -4,6 +4,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/heptio/clerk/emitter"
+
+	"github.com/heptio/clerk/inventory"
+
 	"k8s.io/api/apps/v1beta2"
 
 	"k8s.io/api/core/v1"
@@ -35,15 +39,34 @@ func Namespaces(client *kubernetes.Clientset) {
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				ns := obj.(*v1.Namespace)
+				inv := inventory.Namespace{
+					Name:  ns.ObjectMeta.Name,
+					Event: "created",
+					Kind:  "namespace",
+				}
+
+				// sent the update to remote endpoint
+				emitter.EmitChanges(inv)
+
 				log.Printf("Namespace Created: %s",
-					ns.ObjectMeta.Namespace,
+					ns.ObjectMeta.Name,
 				)
 
 			},
 			DeleteFunc: func(obj interface{}) {
 				ns := obj.(*v1.Namespace)
+
+				inv := inventory.Namespace{
+					Name:  ns.ObjectMeta.Name,
+					Event: "deleted",
+					Kind:  "namespace",
+				}
+
+				// sent the update to remote endpoint
+				emitter.EmitChanges(inv)
+
 				log.Printf("Namespace Deleted: %s",
-					ns.ObjectMeta.Namespace,
+					ns.ObjectMeta.Name,
 				)
 
 			},
