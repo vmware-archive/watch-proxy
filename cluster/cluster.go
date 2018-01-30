@@ -2,11 +2,14 @@ package cluster
 
 import (
 	"log"
+	"time"
 
-	"github.com/heptio/clerk/inventory"
+	"k8s.io/api/apps/v1beta2"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 )
 
 // Version - get the version of k8s running on the cluster
@@ -20,44 +23,78 @@ func Version(client *kubernetes.Clientset) string {
 
 }
 
-// Namespaces - Get list of namespaces running on the cluster
+// Namespaces - Emit events on Namespace create and deletions
 func Namespaces(client *kubernetes.Clientset) {
 
-	// nsData, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
-	nsData, err := client.CoreV1().Namespaces().Watch(metav1.ListOptions{})
-	if err != nil {
-		log.Println("Could not get list of namespaces", err)
-	}
+	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "namespaces", v1.NamespaceAll,
+		fields.Everything())
+	_, controller := cache.NewInformer(
+		watchlist,
+		&v1.Namespace{},
+		time.Second*0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				ns := obj.(*v1.Namespace)
+				log.Printf("Namespace Created: %s",
+					ns.ObjectMeta.Namespace,
+				)
 
-	// namespaces := []string{}
-	// for _, ns := range nsData.Items {
-	// 	namespaces = append(namespaces, ns.ObjectMeta.Name)
-	// }
+			},
+			DeleteFunc: func(obj interface{}) {
+				ns := obj.(*v1.Namespace)
+				log.Printf("Namespace Deleted: %s",
+					ns.ObjectMeta.Namespace,
+				)
 
-	log.Println(nsData)
+			},
+		},
+	)
+
+	stop := make(chan struct{})
+	done := make(chan bool)
+	go controller.Run(stop)
+	log.Println("Started Watching Namespaces")
+	<-done
+
 }
 
-// Deployments - get list of deployments running in a specified namespace
-// and returns an array of inventory Deployment types
-func Deployments(client *kubernetes.Clientset, ns string) []inventory.Deployment {
-	deployments, err := client.AppsV1beta2().Deployments(ns).List(metav1.ListOptions{})
-	if err != nil {
-		log.Println("Could not get list of deployments", err)
-	}
+// Deployments - Emit events on Deployment changes
+func Deployments(client *kubernetes.Clientset) {
+	watchlist := cache.NewListWatchFromClient(client.AppsV1beta2().RESTClient(), "deployments", v1.NamespaceAll,
+		fields.Everything())
+	_, controller := cache.NewInformer(
+		watchlist,
+		&v1beta2.Deployment{},
+		time.Second*0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				dep := obj.(*v1beta2.Deployment)
+				log.Printf("Deployment Created: %s In NameSpace: %s",
+					dep.ObjectMeta.Name,
+					dep.ObjectMeta.Namespace,
+					// TODO: this don't log correctly
+					// but we are only logging for dev purposed currently
+					dep.ObjectMeta.Labels,
+				)
 
-	// create empty array of deployments to return
-	minDeployments := []inventory.Deployment{}
+			},
+			DeleteFunc: func(obj interface{}) {
+				dep := obj.(*v1beta2.Deployment)
+				log.Printf("Deployment Deleted: %s, In NameSpace: %s",
+					dep.ObjectMeta.Name,
+					dep.ObjectMeta.Namespace,
+					// TODO: this don't log correctly
+					// but we are only logging for dev purposed currently
+					dep.ObjectMeta.Labels,
+				)
 
-	for _, deployment := range deployments.Items {
-		minDeployment := inventory.Deployment{
-			Name:            deployment.ObjectMeta.Name,
-			Namespace:       ns,
-			Labels:          deployment.ObjectMeta.Labels,
-			ReplicasDesired: *deployment.Spec.Replicas,
-		}
-		minDeployments = append(minDeployments, minDeployment)
+			},
+		},
+	)
 
-	}
-
-	return minDeployments
+	stop := make(chan struct{})
+	done := make(chan bool)
+	go controller.Run(stop)
+	log.Println("Started Watching Deployments")
+	<-done
 }
