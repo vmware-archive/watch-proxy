@@ -81,6 +81,7 @@ func Namespaces(client *kubernetes.Clientset) {
 
 }
 
+// TODO: what about container images in pods of said deployment?
 // Deployments - Emit events on Deployment changes
 func Deployments(client *kubernetes.Clientset) {
 	watchlist := cache.NewListWatchFromClient(client.AppsV1beta2().RESTClient(), "deployments", v1.NamespaceAll,
@@ -92,25 +93,29 @@ func Deployments(client *kubernetes.Clientset) {
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				dep := obj.(*v1beta2.Deployment)
-				log.Printf("Deployment Created: %s In NameSpace: %s",
-					dep.ObjectMeta.Name,
-					dep.ObjectMeta.Namespace,
-					// TODO: this don't log correctly
-					// but we are only logging for dev purposed currently
-					dep.ObjectMeta.Labels,
-				)
-
+				inv := inventory.Deployment{
+					Name:            dep.ObjectMeta.Name,
+					Namespace:       dep.ObjectMeta.Namespace,
+					Labels:          dep.ObjectMeta.Labels,
+					ReplicasDesired: *dep.Spec.Replicas,
+					Event:           "created",
+					Kind:            "deployment",
+				}
+				// sent the update to remote endpoint
+				emitter.EmitChanges(inv)
 			},
 			DeleteFunc: func(obj interface{}) {
 				dep := obj.(*v1beta2.Deployment)
-				log.Printf("Deployment Deleted: %s, In NameSpace: %s",
-					dep.ObjectMeta.Name,
-					dep.ObjectMeta.Namespace,
-					// TODO: this don't log correctly
-					// but we are only logging for dev purposed currently
-					dep.ObjectMeta.Labels,
-				)
-
+				inv := inventory.Deployment{
+					Name:            dep.ObjectMeta.Name,
+					Namespace:       dep.ObjectMeta.Namespace,
+					Labels:          dep.ObjectMeta.Labels,
+					ReplicasDesired: *dep.Spec.Replicas,
+					Event:           "deleted",
+					Kind:            "deployment",
+				}
+				// sent the update to remote endpoint
+				emitter.EmitChanges(inv)
 			},
 		},
 	)
@@ -120,4 +125,73 @@ func Deployments(client *kubernetes.Clientset) {
 	go controller.Run(stop)
 	log.Println("Started Watching Deployments")
 	<-done
+}
+
+func Pods(client *kubernetes.Clientset) {
+
+	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "pods", v1.NamespaceAll,
+		fields.Everything())
+	_, controller := cache.NewInformer(
+		watchlist,
+		&v1.Pod{},
+		time.Second*0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				pod := obj.(*v1.Pod)
+				inv := inventory.Pod{
+					Name:      pod.ObjectMeta.Name,
+					Namespace: pod.ObjectMeta.Namespace,
+					Labels:    pod.ObjectMeta.Labels,
+					Images:    imagesFromContainers(pod.Spec.Containers),
+					Event:     "created",
+					Kind:      "pod",
+				}
+				// sent the update to remote endpoint
+				emitter.EmitChanges(inv)
+			},
+
+			DeleteFunc: func(obj interface{}) {
+				pod := obj.(*v1.Pod)
+				inv := inventory.Pod{
+					Name:      pod.ObjectMeta.Name,
+					Namespace: pod.ObjectMeta.Namespace,
+					Labels:    pod.ObjectMeta.Labels,
+					Images:    imagesFromContainers(pod.Spec.Containers),
+					Event:     "deleted",
+					Kind:      "pod",
+				}
+				// sent the update to remote endpoint
+				emitter.EmitChanges(inv)
+			},
+
+			UpdateFunc: func(_, obj interface{}) {
+				pod := obj.(*v1.Pod)
+				inv := inventory.Pod{
+					Name:      pod.ObjectMeta.Name,
+					Namespace: pod.ObjectMeta.Namespace,
+					Labels:    pod.ObjectMeta.Labels,
+					Images:    imagesFromContainers(pod.Spec.Containers),
+					Event:     "modified",
+					Kind:      "pod",
+				}
+				// sent the update to remote endpoint
+				emitter.EmitChanges(inv)
+			},
+		},
+	)
+	stop := make(chan struct{})
+	done := make(chan bool)
+	go controller.Run(stop)
+	log.Println("Started Watching Pods")
+	<-done
+}
+
+func imagesFromContainers(containers []v1.Container) []string {
+
+	images := []string{}
+	for _, cont := range containers {
+		images = append(images, cont.Image)
+	}
+
+	return images
 }

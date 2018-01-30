@@ -25,4 +25,15 @@ type Deployment struct {
 	Labels          map[string]string
 	ReplicasDesired int32
 	Event           string
+	Kind            string
+}
+
+// Pod - type that describes pod info
+type Pod struct {
+	Name      string
+	Namespace string
+	Labels    map[string]string
+	Images    []string
+	Event     string
+	Kind      string
 }
