@@ -11,4 +11,8 @@ url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://githu
 # copy the binary from the build stage to the final stage
 FROM alpine:3.6
 COPY --from=build /go/src/github.com/heptio/clerk/app /clerk
-CMD ["/clerk"]
+RUN apk --update upgrade && \
+    apk add ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/cache/apk/*
+ENTRYPOINT ["/clerk"]
