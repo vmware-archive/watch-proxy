@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:41Z","name":"disruption-controller","namespace":"kube-system","resourceVersion":"178","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/disruption-controller","uid":"fd968343-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"disruption-controller-token-jtk9p"}]}

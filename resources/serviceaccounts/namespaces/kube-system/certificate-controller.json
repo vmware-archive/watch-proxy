@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:41Z","name":"certificate-controller","namespace":"kube-system","resourceVersion":"182","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/certificate-controller","uid":"fda63bc7-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"certificate-controller-token-hrw5j"}]}

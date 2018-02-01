@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:44Z","name":"route-controller","namespace":"kube-system","resourceVersion":"261","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/route-controller","uid":"ff32f20c-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"route-controller-token-cmdvg"}]}

@@ -1,52 +1,102 @@
 package main
 
 import (
-	"fmt"
+	"flag"
+	"log"
+	"os"
+	"runtime/pprof"
+	"sync"
 
-	"github.com/heptio/clerk/inventory"
-
-	"github.com/heptio/clerk/cluster"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"github.com/heptio/arkinv/emitter"
+	"github.com/heptio/arkinv/ingestion"
+	"github.com/heptio/arkinv/inventory"
 )
 
+func dedupeSlice(s []string) []string {
+	set := make(map[string]bool)
+	nSlice := []string{}
+	for _, v := range s {
+		set[v] = true
+	}
+
+	for k := range set {
+		nSlice = append(nSlice, k)
+	}
+
+	return nSlice
+}
+
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
-
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer func() {
+			pprof.StopCPUProfile()
+			if err := f.Close(); err != nil {
+				log.Fatal(err)
+			}
+		}()
 	}
 
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
+	resourceDirs := []string{
+		"resources/deployments.apps",
+		"resources/namespaces/cluster",
+		"resources/pods",
 	}
 
-	// get the cluster version
-	version := cluster.Version(clientset)
+	cluster := inventory.Cluster{}
+	ns := inventory.Namespace{}
+	dep := inventory.Deployment{}
+	pod := inventory.Pod{}
+	var deployments []inventory.Deployment
+	var pods []inventory.Pod
+	images := make(map[string][]string)
 
-	// Init our cluster inventory with the version
-	inv := inventory.Cluster{
-		Version: version,
+	var wg sync.WaitGroup
+	wg.Add(len(resourceDirs))
+
+	for _, dir := range resourceDirs {
+		fileData := ingestion.ReadFiles(dir)
+
+		// go func(wg *sync.WaitGroup) {
+		for resourceType, files := range fileData {
+			for _, file := range files {
+				switch resourceType {
+				case "Namespace":
+					ns.DecodeNamespace(file)
+					cluster.Namespaces = append(cluster.Namespaces, ns)
+				case "Deployment":
+					dep.DecodeDeployment(file)
+					deployments = append(deployments, dep)
+				case "Pod":
+					pod.DecodePod(file)
+					pods = append(pods, pod)
+					images[pod.Namespace] = append(images[pod.Namespace], pod.Images...)
+
+				}
+			}
+		}
+		wg.Done()
+		// }(&wg)
+	}
+	wg.Wait()
+
+	// dedupe the image names
+	dedupedImages := make(map[string][]string)
+	for k, v := range images {
+		dedupedImages[k] = dedupeSlice(v)
 	}
 
-	// get the namespaces
-	inv.Namespaces = cluster.Namespaces(clientset)
+	// map pods
+	cluster.Deployments = inventory.MapDeps(deployments)
+	cluster.Pods = inventory.MapPods(pods)
+	cluster.Images = dedupedImages
+	emitter.EmitChanges(cluster)
 
-	// init nsDeployments var for use in loop
-	nsDeployments := make(map[string][]inventory.Deployment, len(inv.Namespaces))
-	// fetch deployment information
-	// nsDeployments := make(map[string][]inventory.Deployment)
-	for _, ns := range inv.Namespaces {
-		nsDeployments[ns] = cluster.Deployments(clientset, ns)
-	}
-
-	// take our adhoc nsDeployments and add it to the inventory struct
-	inv.Deployments = nsDeployments
-
-	// testing
-	fmt.Printf("%+v", inv.Deployments)
 }

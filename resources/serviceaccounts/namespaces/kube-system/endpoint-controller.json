@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:41Z","name":"endpoint-controller","namespace":"kube-system","resourceVersion":"163","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/endpoint-controller","uid":"fd7d59ff-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"endpoint-controller-token-gmn6x"}]}

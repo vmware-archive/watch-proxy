@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-30T05:10:04Z","name":"default","namespace":"foo1","resourceVersion":"68239","selfLink":"/api/v1/namespaces/foo1/serviceaccounts/default","uid":"d4e9c26f-057b-11e8-a482-029aea4b951c"},"secrets":[{"name":"default-token-z5zcw"}]}

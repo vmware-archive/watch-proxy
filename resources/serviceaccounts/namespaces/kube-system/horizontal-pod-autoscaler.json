@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:44Z","name":"horizontal-pod-autoscaler","namespace":"kube-system","resourceVersion":"253","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/horizontal-pod-autoscaler","uid":"fefb0bbe-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"horizontal-pod-autoscaler-token-d55fn"}]}

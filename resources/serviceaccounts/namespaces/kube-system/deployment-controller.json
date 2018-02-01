@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:41Z","name":"deployment-controller","namespace":"kube-system","resourceVersion":"175","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/deployment-controller","uid":"fd941870-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"deployment-controller-token-hlrx8"}]}

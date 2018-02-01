@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"Endpoints","metadata":{"creationTimestamp":"2018-01-29T15:13:38Z","name":"kubernetes","namespace":"default","resourceVersion":"22","selfLink":"/api/v1/namespaces/default/endpoints/kubernetes","uid":"fbca2bba-0506-11e8-a482-029aea4b951c"},"subsets":[{"addresses":[{"ip":"10.1.1.43"}],"ports":[{"name":"https","port":6443,"protocol":"TCP"}]}]}

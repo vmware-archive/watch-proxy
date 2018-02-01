@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:42Z","name":"bootstrap-signer","namespace":"kube-system","resourceVersion":"213","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/bootstrap-signer","uid":"fdf28687-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"bootstrap-signer-token-tmjjr"}]}

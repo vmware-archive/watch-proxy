@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"Namespace","metadata":{"creationTimestamp":"2018-01-30T05:10:04Z","name":"foo1","resourceVersion":"68236","selfLink":"/api/v1/namespaces/foo1","uid":"d4e93144-057b-11e8-a482-029aea4b951c"},"spec":{"finalizers":["kubernetes"]}}

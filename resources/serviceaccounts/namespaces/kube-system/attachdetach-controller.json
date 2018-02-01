@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:45Z","name":"attachdetach-controller","namespace":"kube-system","resourceVersion":"285","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/attachdetach-controller","uid":"fff1af2d-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"attachdetach-controller-token-k2qqd"}]}

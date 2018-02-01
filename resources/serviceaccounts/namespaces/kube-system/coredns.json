@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:41Z","name":"coredns","namespace":"kube-system","resourceVersion":"196","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/coredns","uid":"fdb4aa1d-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"coredns-token-cq4cz"}]}

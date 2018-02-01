@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-30T19:20:17Z","name":"default","namespace":"heptio-ark","resourceVersion":"135108","selfLink":"/api/v1/namespaces/heptio-ark/serviceaccounts/default","uid":"9ac47373-05f2-11e8-a482-029aea4b951c"},"secrets":[{"name":"default-token-bn5v9"}]}

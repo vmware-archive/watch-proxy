@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:42Z","name":"generic-garbage-collector","namespace":"kube-system","resourceVersion":"234","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/generic-garbage-collector","uid":"fe3edae4-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"generic-garbage-collector-token-l76vp"}]}

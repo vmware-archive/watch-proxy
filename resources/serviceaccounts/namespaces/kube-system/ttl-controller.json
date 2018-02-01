@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:42Z","name":"ttl-controller","namespace":"kube-system","resourceVersion":"209","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/ttl-controller","uid":"fdcc5f98-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"ttl-controller-token-xgzdw"}]}

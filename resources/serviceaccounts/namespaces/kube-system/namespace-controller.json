@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:41Z","name":"namespace-controller","namespace":"kube-system","resourceVersion":"166","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/namespace-controller","uid":"fd827fd4-0506-11e8-a482-029aea4b951c"},"secrets":[{"name":"namespace-controller-token-w6xch"}]}

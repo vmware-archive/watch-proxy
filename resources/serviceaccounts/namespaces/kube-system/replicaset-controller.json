@@ -1,0 +1,1 @@
+{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"creationTimestamp":"2018-01-29T15:13:46Z","name":"replicaset-controller","namespace":"kube-system","resourceVersion":"293","selfLink":"/api/v1/namespaces/kube-system/serviceaccounts/replicaset-controller","uid":"003df9b3-0507-11e8-a482-029aea4b951c"},"secrets":[{"name":"replicaset-controller-token-vhf6c"}]}
