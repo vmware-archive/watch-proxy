@@ -1,0 +1,39 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: http-service-example
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: http-service-example
+        version: "2"
+    spec:
+      containers:
+      - name: http-server-test
+        image: jpweber/http-service-test:2.1.0
+        ports:
+        - containerPort: 8080
+        resources:
+            requests:
+                memory: "256Mi"
+                cpu: "100m"
+            limits:
+                memory: "512Mi"
+                cpu: "150m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-service-test
+  labels:
+    app: http-service-test
+    tier: backend
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: http-service-example
+              

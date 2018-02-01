@@ -12,8 +12,8 @@ spec:
           - name: clerk
             image: jpweber/clerk:0.2.2
             args:
-            - '-region=us-east-2'
-            - '-bucket=jpw-ark-test'
+            - '-region=<region>'
+            - '-bucket=<bucket name>'
             - '-receiver=http://http-service-test:8080/updates'
             env:
             - name: AWS_ACCESS_KEY_ID
