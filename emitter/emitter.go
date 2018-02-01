@@ -1,13 +1,14 @@
 package emitter
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
+	"net/http"
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
-func EmitChanges(newData interface{}) {
+func EmitChanges(newData interface{}, url string) {
 	// TODO: make this dynamic
 	// bring in from configmamp
 
@@ -19,15 +20,17 @@ func EmitChanges(newData interface{}) {
 		log.Println("Error marshalling new data", err)
 	}
 
-	fmt.Println(string(jsonBody))
-	// commented out for testing
-	// req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonBody))
-	// req.Header.Set("Content-Type", "application/json")
+	// fmt.Println(string(jsonBody))
 
-	// client := &http.Client{}
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	log.Println("Error:", err)
-	// }
-	// defer resp.Body.Close()
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Error:", err)
+	}
+	defer resp.Body.Close()
+
+	log.Println("Inventory data sent to receiver")
 }

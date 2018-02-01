@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"sync"
 
 	"github.com/heptio/clerk/backup"
@@ -25,12 +26,18 @@ func dedupeSlice(s []string) []string {
 
 func main() {
 
+	bucket := flag.String("bucket", "", "Bucket Name that stores that Ark backups")
+	region := flag.String("region", "", "Region the bucket is in")
+	receiver := flag.String("receiver", "", "Destination URL to send the results to")
+
+	flag.Parse()
+
 	b := backup.Backup{
 		// TODO: this will need to be read from user provided config
 		Provider: "aws",
 		ConnInfo: backup.ConnectionInfo{
-			BucketName: "jpw-ark-test",
-			Region:     "us-east-2",
+			BucketName: *bucket,
+			Region:     *region,
 		},
 	}
 	b.List()
@@ -56,26 +63,26 @@ func main() {
 	for _, dir := range resourceDirs {
 		fileData := ingestion.ReadFiles(dir)
 
-		// go func(wg *sync.WaitGroup) {
-		for resourceType, files := range fileData {
-			for _, file := range files {
-				switch resourceType {
-				case "Namespace":
-					ns.DecodeNamespace(file)
-					cluster.Namespaces = append(cluster.Namespaces, ns)
-				case "Deployment":
-					dep.DecodeDeployment(file)
-					deployments = append(deployments, dep)
-				case "Pod":
-					pod.DecodePod(file)
-					pods = append(pods, pod)
-					images[pod.Namespace] = append(images[pod.Namespace], pod.Images...)
+		go func(wg *sync.WaitGroup) {
+			for resourceType, files := range fileData {
+				for _, file := range files {
+					switch resourceType {
+					case "Namespace":
+						ns.DecodeNamespace(file)
+						cluster.Namespaces = append(cluster.Namespaces, ns)
+					case "Deployment":
+						dep.DecodeDeployment(file)
+						deployments = append(deployments, dep)
+					case "Pod":
+						pod.DecodePod(file)
+						pods = append(pods, pod)
+						images[pod.Namespace] = append(images[pod.Namespace], pod.Images...)
 
+					}
 				}
 			}
-		}
-		wg.Done()
-		// }(&wg)
+			wg.Done()
+		}(&wg)
 	}
 	wg.Wait()
 
@@ -89,6 +96,6 @@ func main() {
 	cluster.Deployments = inventory.MapDeps(deployments)
 	cluster.Pods = inventory.MapPods(pods)
 	cluster.Images = dedupedImages
-	emitter.EmitChanges(cluster)
+	emitter.EmitChanges(cluster, *receiver)
 
 }
