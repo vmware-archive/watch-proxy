@@ -1,0 +1,64 @@
+package backup
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+)
+
+func exitErrorf(msg string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, msg+"\n", args...)
+}
+
+func (b *Backup) S3ListObjects() map[string]time.Time {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(b.ConnInfo.Region)},
+	)
+
+	// Create S3 service client
+	svc := s3.New(sess)
+
+	resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(b.ConnInfo.BucketName)})
+	if err != nil {
+		exitErrorf("Unable to list items in bucket %q, %v", b.ConnInfo.BucketName, err)
+	}
+
+	objects := make(map[string]time.Time)
+	for _, item := range resp.Contents {
+		objects[*item.Key] = *item.LastModified
+	}
+
+	return objects
+}
+
+func (b *Backup) S3GetObject() {
+
+	file, err := os.Create("backup.tar.gz")
+	if err != nil {
+		exitErrorf("Unable to open file %q, %v", err)
+	}
+
+	defer file.Close()
+
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(b.ConnInfo.Region)},
+	)
+
+	downloader := s3manager.NewDownloader(sess)
+	numBytes, err := downloader.Download(file,
+		&s3.GetObjectInput{
+			Bucket: aws.String(b.ConnInfo.BucketName),
+			Key:    aws.String(b.FileName),
+		})
+	if err != nil {
+		exitErrorf("Unable to download item %q, %v", b.FileName, err)
+	}
+
+	log.Println("Downloaded", file.Name(), numBytes, "bytes")
+}

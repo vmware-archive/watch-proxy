@@ -1,15 +1,12 @@
 package main
 
 import (
-	"flag"
-	"log"
-	"os"
-	"runtime/pprof"
 	"sync"
 
-	"github.com/heptio/arkinv/emitter"
-	"github.com/heptio/arkinv/ingestion"
-	"github.com/heptio/arkinv/inventory"
+	"github.com/heptio/clerk/backup"
+	"github.com/heptio/clerk/emitter"
+	"github.com/heptio/clerk/ingestion"
+	"github.com/heptio/clerk/inventory"
 )
 
 func dedupeSlice(s []string) []string {
@@ -26,23 +23,18 @@ func dedupeSlice(s []string) []string {
 	return nSlice
 }
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-
 func main() {
-	flag.Parse()
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer func() {
-			pprof.StopCPUProfile()
-			if err := f.Close(); err != nil {
-				log.Fatal(err)
-			}
-		}()
+
+	b := backup.Backup{
+		// TODO: this will need to be read from user provided config
+		Provider: "aws",
+		ConnInfo: backup.ConnectionInfo{
+			BucketName: "jpw-ark-test",
+			Region:     "us-east-2",
+		},
 	}
+	b.List()
+	b.Get()
 
 	resourceDirs := []string{
 		"resources/deployments.apps",
