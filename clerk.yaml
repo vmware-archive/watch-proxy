@@ -12,10 +12,26 @@ spec:
           - name: clerk
             image: jpweber/clerk:0.2.2
             args:
-            - '-region=<region>'
-            - '-bucket=<bucket name>'
-            - '-receiver=http://http-service-test:8080/updates'
+            - '-region=$(REGION)'
+            - '-bucket=$(BUCKET)'
+            - '-receiver=$(RECEIVER)'
+            - '-storageprovider=$(PROVIDER)'
             env:
+            - name: REGION 
+              valueFrom:
+              configMapKeyRef:
+                name: command-args
+                key: region
+            - name: BUCKET 
+              valueFrom:
+              configMapKeyRef:
+                name: command-args
+                key: bucket
+            - name: RECEIVER 
+              valueFrom:
+              configMapKeyRef:
+                name: command-args
+                key: receiver                               
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
