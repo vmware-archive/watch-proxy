@@ -24,3 +24,7 @@
 [[constraint]]
   branch = "master"
   name = "k8s.io/api"
+
+[[constraint]]
+  name = "github.com/minio/minio-go"
+  version = "4.0.7"

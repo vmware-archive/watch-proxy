@@ -16,22 +16,34 @@ spec:
             - '-bucket=$(BUCKET)'
             - '-receiver=$(RECEIVER)'
             - '-storageprovider=$(PROVIDER)'
+            - '-accesskeyid=$(AWS_ACCESS_KEY_ID)'
+            - '-accesskeysecret=$(AWS_SECRET_ACCESS_KEY)'
             env:
             - name: REGION 
               valueFrom:
-              configMapKeyRef:
+              configMapRef:
                 name: command-args
                 key: region
             - name: BUCKET 
               valueFrom:
-              configMapKeyRef:
+              configMapRef:
                 name: command-args
                 key: bucket
             - name: RECEIVER 
               valueFrom:
-              configMapKeyRef:
+              configMapRef:
                 name: command-args
-                key: receiver                               
+                key: receiver
+            - name: PROVIDER
+              valueFrom:
+              configMapRef:
+                name: command-args
+                key: storageprovider
+            - name: MINIOENDPOINT
+              valueFrom:
+              configMapRef:
+                name: command-args
+                key: minioendpoint                       
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:

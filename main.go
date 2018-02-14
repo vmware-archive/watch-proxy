@@ -25,19 +25,24 @@ func dedupeSlice(s []string) []string {
 }
 
 func main() {
-
+	provider := flag.String("storageprovider", "", "Storage Provider containing the Ark backups")
 	bucket := flag.String("bucket", "", "Bucket Name that stores that Ark backups")
 	region := flag.String("region", "", "Region the bucket is in")
 	receiver := flag.String("receiver", "", "Destination URL to send the results to")
+	minioendpoint := flag.String("minioendpoint", "", "Endpoint to connect to Minio if using Minio as your storage provider")
+	accesskeyid := flag.String("accesskeyid", "", "AWS Access Key ID")
+	accesskeysecret := flag.String("accesskeysecret", "", "AWS Access Key Secret")
 
 	flag.Parse()
 
 	b := backup.Backup{
-		// TODO: this will need to be read from user provided config
-		Provider: "aws",
+		Provider: *provider,
 		ConnInfo: backup.ConnectionInfo{
-			BucketName: *bucket,
-			Region:     *region,
+			BucketName:   *bucket,
+			Region:       *region,
+			Endpoint:     *minioendpoint,
+			AccessKey:    *accesskeyid,
+			AccessSecret: *accesskeysecret,
 		},
 	}
 	b.List()

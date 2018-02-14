@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/mholt/archiver"
+	"github.com/minio/minio-go"
 )
 
 type Backup struct {
@@ -15,8 +16,12 @@ type Backup struct {
 }
 
 type ConnectionInfo struct {
-	Region     string
-	BucketName string
+	Region       string
+	BucketName   string
+	Endpoint     string
+	AccessKey    string
+	AccessSecret string
+	MinioClient  *minio.Client
 }
 
 func (b *Backup) List() {
@@ -25,6 +30,9 @@ func (b *Backup) List() {
 	switch b.Provider {
 	case "aws":
 		objects = b.S3ListObjects()
+	case "minio":
+		b.ConnInfo.MinioClient = b.MinioClient()
+		objects = b.MinioListObjects()
 	}
 
 	b.newestBackup(objects)

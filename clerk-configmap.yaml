@@ -8,3 +8,4 @@ data:
   bucket: jpw-ark-test
   region: us-east-2
   receiver: http://http-service-test:8080/updates
+  minioendpoint: http:/minio.kube-system:9000
