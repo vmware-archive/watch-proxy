@@ -10,7 +10,7 @@ spec:
         spec:
           containers:
           - name: clerk
-            image: jpweber/clerk:0.2.2
+            image: quay.io/nicholas_lane/clerk:0.2.3-test8
             args:
             - '-region=$(REGION)'
             - '-bucket=$(BUCKET)'
@@ -22,27 +22,27 @@ spec:
             env:
             - name: REGION 
               valueFrom:
-                configMapRef:
+                configMapKeyRef:
                   name: command-args
                   key: region
             - name: BUCKET 
               valueFrom:
-                configMapRef:
+                configMapKeyRef:
                   name: command-args
                   key: bucket
             - name: RECEIVER 
               valueFrom:
-                configMapRef:
+                configMapKeyRef:
                   name: command-args
                   key: receiver
             - name: PROVIDER
               valueFrom:
-                configMapRef:
+                configMapKeyRef:
                   name: command-args
                   key: storageprovider
             - name: MINIOENDPOINT
               valueFrom:
-                configMapRef:
+                configMapKeyRef:
                   name: command-args
                   key: minioendpoint                       
             - name: AWS_ACCESS_KEY_ID
@@ -55,4 +55,5 @@ spec:
                 secretKeyRef:
                   name: cloud-creds
                   key: secret_access_key
-          restartPolicy: Never
+          restartPolicy: OnFailure 
+

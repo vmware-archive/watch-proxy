@@ -1,11 +1,10 @@
----
 apiVersion: v1
-kind: Config
+kind: ConfigMap
 metadata:
   name: command-args
 data:
-  storageprovider: aws
-  bucket: jpw-ark-test
-  region: us-east-2
-  receiver: http://http-service-test:8080/updates
-  minioendpoint: http:/minio.kube-system:9000
+  storageprovider: aws 
+  bucket: ark
+  region: us-east-1 
+  receiver: http://http-service-test.clerk:8080/updates
+  minioendpoint: http://minio.kube-system:9000
