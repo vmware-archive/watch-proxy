@@ -10,6 +10,7 @@ import (
 
 func exitMinioErrorf(msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg+"\n", args...)
+	os.Exit(1)
 }
 
 func (b *Backup) MinioClient() *minio.Client {
@@ -21,6 +22,7 @@ func (b *Backup) MinioClient() *minio.Client {
 
 	return minioClient
 }
+
 func (b *Backup) MinioListObjects() map[string]time.Time {
 	doneCh := make(chan struct{})
 
@@ -29,13 +31,15 @@ func (b *Backup) MinioListObjects() map[string]time.Time {
 
 	recursive := true
 	objectCh := client.ListObjectsV2(b.ConnInfo.BucketName, "", recursive, doneCh)
+	fmt.Println(os.Stderr, "Going into object loop")
 	for object := range objectCh {
 		if object.Err != nil {
 			exitMinioErrorf("Received error access object: %v, %v", object, object.Err)
 		}
-		fmt.Println(object)
+		fmt.Fprintf(os.Stderr, "ObjectChannel: %v\n Object: %v", objectCh, object)
 	}
 	objects["test1"] = time.Now()
+
 	return objects
 }
 

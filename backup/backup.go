@@ -1,7 +1,9 @@
 package backup
 
 import (
+	"fmt"
 	"log"
+	//	"os"
 	"regexp"
 	"time"
 
@@ -21,19 +23,26 @@ type ConnectionInfo struct {
 	Endpoint     string
 	AccessKey    string
 	AccessSecret string
+	DisableSSL   bool
 	MinioClient  *minio.Client
 }
 
 func (b *Backup) List() {
 	// just s3 for the moment
 	objects := make(map[string]time.Time)
+	//fmt.Fprintf(os.Stderr, "What provider are we: %v", b.Provider)
 	switch b.Provider {
 	case "aws":
-		objects = b.S3ListObjects()
+		b.ConnInfo.DisableSSL = false
 	case "minio":
-		b.ConnInfo.MinioClient = b.MinioClient()
-		objects = b.MinioListObjects()
+		b.ConnInfo.DisableSSL = true
 	}
+	objects = b.S3ListObjects()
+
+	//	b.ConnInfo.MinioClient = b.MinioClient()
+	//	fmt.Fprintf(os.Stderr, "Tell me about the client: %v", b.ConnInfo.MinioClient)
+	//	objects = b.MinioListObjects()
+	//}
 
 	b.newestBackup(objects)
 
@@ -62,7 +71,13 @@ func (b *Backup) Get() {
 
 	saveFileName := "backup.tar.gz"
 	// just s3 for the moment
-	b.S3GetObject()
+	switch b.Provider {
+	case "aws":
+		b.S3GetObject()
+	case "minio":
+		fmt.Printf("I still need to write the Minio Get function")
+	}
+	//
 
 	err := unPack(saveFileName, ".")
 	if err != nil {

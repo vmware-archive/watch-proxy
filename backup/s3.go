@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -18,7 +19,11 @@ func exitErrorf(msg string, args ...interface{}) {
 
 func (b *Backup) S3ListObjects() map[string]time.Time {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(b.ConnInfo.Region)},
+		Credentials:      credentials.NewStaticCredentials(b.ConnInfo.AccessKey, b.ConnInfo.AccessSecret, ""),
+		Region:           aws.String(b.ConnInfo.Region),
+		Endpoint:         aws.String(b.ConnInfo.Endpoint),
+		DisableSSL:       aws.Bool(b.ConnInfo.DisableSSL),
+		S3ForcePathStyle: aws.Bool(true)},
 	)
 
 	// Create S3 service client

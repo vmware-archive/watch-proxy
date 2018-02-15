@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/heptio/clerk/backup"
@@ -45,9 +47,10 @@ func main() {
 			AccessSecret: *accesskeysecret,
 		},
 	}
+	fmt.Fprintf(os.Stderr, "What's in the Backup?: %v", b)
 	b.List()
+	os.Exit(1)
 	b.Get()
-
 	resourceDirs := []string{
 		"resources/deployments.apps",
 		"resources/namespaces/cluster",
