@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
+	//	"fmt"
+	//	"os"
 	"sync"
 
 	"github.com/heptio/clerk/backup"
@@ -31,7 +31,7 @@ func main() {
 	bucket := flag.String("bucket", "", "Bucket Name that stores that Ark backups")
 	region := flag.String("region", "", "Region the bucket is in")
 	receiver := flag.String("receiver", "", "Destination URL to send the results to")
-	minioendpoint := flag.String("minioendpoint", "", "Endpoint to connect to Minio if using Minio as your storage provider")
+	endpoint := flag.String("endpoint", "", "S3 Endpoint to use when trying to pull Ark backups")
 	accesskeyid := flag.String("accesskeyid", "", "AWS Access Key ID")
 	accesskeysecret := flag.String("accesskeysecret", "", "AWS Access Key Secret")
 
@@ -42,14 +42,13 @@ func main() {
 		ConnInfo: backup.ConnectionInfo{
 			BucketName:   *bucket,
 			Region:       *region,
-			Endpoint:     *minioendpoint,
+			Endpoint:     *endpoint,
 			AccessKey:    *accesskeyid,
 			AccessSecret: *accesskeysecret,
 		},
 	}
-	fmt.Fprintf(os.Stderr, "What's in the Backup?: %v", b)
+	b.NewSession()
 	b.List()
-	os.Exit(1)
 	b.Get()
 	resourceDirs := []string{
 		"resources/deployments.apps",

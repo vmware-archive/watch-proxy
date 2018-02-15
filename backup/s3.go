@@ -17,7 +17,7 @@ func exitErrorf(msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg+"\n", args...)
 }
 
-func (b *Backup) S3ListObjects() map[string]time.Time {
+func (b *Backup) S3NewSession() *session.Session {
 	sess, err := session.NewSession(&aws.Config{
 		Credentials:      credentials.NewStaticCredentials(b.ConnInfo.AccessKey, b.ConnInfo.AccessSecret, ""),
 		Region:           aws.String(b.ConnInfo.Region),
@@ -25,9 +25,16 @@ func (b *Backup) S3ListObjects() map[string]time.Time {
 		DisableSSL:       aws.Bool(b.ConnInfo.DisableSSL),
 		S3ForcePathStyle: aws.Bool(true)},
 	)
+	if err != nil {
+		exitErrorf("Unable to establish a connection with the S3 Provider: %v, %v", b.Provider, err)
+	}
+	return sess
+}
+
+func (b *Backup) S3ListObjects() map[string]time.Time {
 
 	// Create S3 service client
-	svc := s3.New(sess)
+	svc := s3.New(b.ConnInfo.S3Session)
 
 	resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(b.ConnInfo.BucketName)})
 	if err != nil {
@@ -51,11 +58,7 @@ func (b *Backup) S3GetObject() {
 
 	defer file.Close()
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(b.ConnInfo.Region)},
-	)
-
-	downloader := s3manager.NewDownloader(sess)
+	downloader := s3manager.NewDownloader(b.ConnInfo.S3Session)
 	numBytes, err := downloader.Download(file,
 		&s3.GetObjectInput{
 			Bucket: aws.String(b.ConnInfo.BucketName),
