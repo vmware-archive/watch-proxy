@@ -2,7 +2,6 @@ package backup
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -49,17 +48,18 @@ func (b *Backup) S3ListObjects() map[string]time.Time {
 	return objects
 }
 
-func (b *Backup) S3GetObject() {
+func (b *Backup) S3GetObject() []byte {
 
-	file, err := os.Create("backup.tar.gz")
-	if err != nil {
-		exitErrorf("Unable to open file %q, %v", err)
-	}
+	// file, err := os.Create("backup.tar.gz")
+	//	if err != nil {
+	//		exitErrorf("Unable to open file %q, %v", err)
+	//	}
 
-	defer file.Close()
+	//	defer file.Close()
+	buff := &aws.WriteAtBuffer{}
 
 	downloader := s3manager.NewDownloader(b.ConnInfo.S3Session)
-	numBytes, err := downloader.Download(file,
+	_, err := downloader.Download(buff,
 		&s3.GetObjectInput{
 			Bucket: aws.String(b.ConnInfo.BucketName),
 			Key:    aws.String(b.FileName),
@@ -68,5 +68,6 @@ func (b *Backup) S3GetObject() {
 		exitErrorf("Unable to download item %q, %v", b.FileName, err)
 	}
 
-	log.Println("Downloaded", file.Name(), numBytes, "bytes")
+	return buff.Bytes()
+	//log.Println("Downloaded", buff, numBytes, "bytes")
 }

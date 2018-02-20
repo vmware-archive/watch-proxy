@@ -35,7 +35,6 @@ func ReadFiles(dir string) map[string][][]byte {
 	// wg.Add(len(files))
 
 	for _, file := range files {
-
 		fileInfo, _ := os.Stat(file)
 		if fileInfo.IsDir() {
 			continue
@@ -45,7 +44,6 @@ func ReadFiles(dir string) map[string][][]byte {
 		if err != nil {
 			log.Println("Error opening file", err)
 		}
-
 		reseourceType = findType(fileContents)
 		resourceFiles = append(resourceFiles, fileContents)
 		// wg.Done()

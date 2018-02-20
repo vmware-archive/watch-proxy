@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	//	"fmt"
-	//	"os"
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/heptio/clerk/backup"
@@ -49,11 +49,15 @@ func main() {
 	}
 	b.NewSession()
 	b.List()
-	b.Get()
+	unpackDir, err := b.Get()
+	if err != nil {
+		fmt.Printf("Received Error from Get: %v", err)
+		os.Exit(1)
+	}
 	resourceDirs := []string{
-		"resources/deployments.apps",
-		"resources/namespaces/cluster",
-		"resources/pods",
+		unpackDir + "/resources/deployments.apps",
+		unpackDir + "/resources/namespaces/cluster",
+		unpackDir + "/resources/pods",
 	}
 
 	cluster := inventory.Cluster{}

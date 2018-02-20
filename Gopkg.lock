@@ -36,19 +36,6 @@
   version = "v1.12.70"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/dsnet/compress"
-  packages = [
-    ".",
-    "bzip2",
-    "bzip2/internal/sais",
-    "internal",
-    "internal/errors",
-    "internal/prefix"
-  ]
-  revision = "cc9eb1d7ad760af14e8f918698f745e80377af4f"
-
-[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -136,18 +123,6 @@
   version = "1.0.1"
 
 [[projects]]
-  name = "github.com/mholt/archiver"
-  packages = ["."]
-  revision = "cdc68dd1f170b8dfc1a0d2231b5bb0967ed67006"
-  version = "v2.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/nwaples/rardecode"
-  packages = ["."]
-  revision = "e06696f847aeda6f39a8f0b7cdff193b7690aef6"
-
-[[projects]]
   branch = "master"
   name = "github.com/petar/GoLLRB"
   packages = ["llrb"]
@@ -164,17 +139,6 @@
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/ulikunitz/xz"
-  packages = [
-    ".",
-    "internal/hash",
-    "internal/xlog",
-    "lzma"
-  ]
-  revision = "0c6b41e72360850ca4f98dc341fd999726ea007f"
-  version = "v0.5.4"
 
 [[projects]]
   branch = "master"
@@ -348,6 +312,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "649827cbefa81981162b324bb06c83d164b79b8a95c8101f06271f2bdea53468"
+  inputs-digest = "1f5e9c48042a8878c2eed70f107afb636e0bd717ed39c8ec44aa583f8d6e6e5c"
   solver-name = "gps-cdcl"
   solver-version = 1

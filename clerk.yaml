@@ -10,7 +10,8 @@ spec:
         spec:
           containers:
           - name: clerk
-            image: quay.io/nicholas_lane/clerk:0.2.3-test8
+            image: quay.io/nicholas_lane/clerk:0.2.4
+            imagePullPolicy: Always
             args:
             - '-region=$(REGION)'
             - '-bucket=$(BUCKET)'
