@@ -8,10 +8,10 @@ import (
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
-func EmitChanges(newData interface{}) {
+func EmitChanges(newData interface{}, url string) {
 	// TODO: make this dynamic
 	// bring in from configmamp
-	url := "http://http-service-test.default.svc.cluster.local:8080/updates"
+	// url := "http://http-service-test.default.svc.cluster.local:8080/updates"
 
 	jsonBody, err := json.Marshal(newData)
 	if err != nil {

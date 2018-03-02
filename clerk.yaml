@@ -51,7 +51,7 @@ spec:
       serviceAccountName: clerk-controller
       containers:
       - name: clerk
-        image: jpweber/clerk:0.1.4
+        image: jpweber/clerk:0.1.5
         resources:
             requests:
                 memory: "128Mi"
@@ -59,3 +59,9 @@ spec:
             limits:
                 memory: "512Mi"
                 cpu: "150m"
+        env:
+        - name: REMOTE_ENDPOINT # this part would be the name of the ENV Variable
+          valueFrom:
+            configMapKeyRef:
+              name: qm-envvars
+              key: remote_endpoint

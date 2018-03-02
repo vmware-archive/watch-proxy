@@ -1,0 +1,6 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: qm-envvars
+data:
+  remote_endpoint: "http://http-service-test.default.svc.cluster.local:8080/updates"

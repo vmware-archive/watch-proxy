@@ -28,14 +28,14 @@ func Version(client *kubernetes.Clientset) string {
 }
 
 // Namespaces - Emit events on Namespace create and deletions
-func Namespaces(client *kubernetes.Clientset) {
+func Namespaces(client *kubernetes.Clientset, remoteEnd string) {
 
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "namespaces", v1.NamespaceAll,
 		fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Namespace{},
-		time.Second*0,
+		time.Second*60,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				ns := obj.(*v1.Namespace)
@@ -46,7 +46,7 @@ func Namespaces(client *kubernetes.Clientset) {
 				}
 
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv)
+				emitter.EmitChanges(inv, remoteEnd)
 
 				log.Printf("Namespace Created: %s",
 					ns.ObjectMeta.Name,
@@ -63,7 +63,7 @@ func Namespaces(client *kubernetes.Clientset) {
 				}
 
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv)
+				emitter.EmitChanges(inv, remoteEnd)
 
 				log.Printf("Namespace Deleted: %s",
 					ns.ObjectMeta.Name,
@@ -81,9 +81,8 @@ func Namespaces(client *kubernetes.Clientset) {
 
 }
 
-// TODO: what about container images in pods of said deployment?
 // Deployments - Emit events on Deployment changes
-func Deployments(client *kubernetes.Clientset) {
+func Deployments(client *kubernetes.Clientset, remoteEnd string) {
 	watchlist := cache.NewListWatchFromClient(client.AppsV1beta2().RESTClient(), "deployments", v1.NamespaceAll,
 		fields.Everything())
 	_, controller := cache.NewInformer(
@@ -102,7 +101,7 @@ func Deployments(client *kubernetes.Clientset) {
 					Kind:            "deployment",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv)
+				emitter.EmitChanges(inv, remoteEnd)
 			},
 			DeleteFunc: func(obj interface{}) {
 				dep := obj.(*v1beta2.Deployment)
@@ -115,7 +114,7 @@ func Deployments(client *kubernetes.Clientset) {
 					Kind:            "deployment",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv)
+				emitter.EmitChanges(inv, remoteEnd)
 			},
 		},
 	)
@@ -127,7 +126,7 @@ func Deployments(client *kubernetes.Clientset) {
 	<-done
 }
 
-func Pods(client *kubernetes.Clientset) {
+func Pods(client *kubernetes.Clientset, remoteEnd string) {
 
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "pods", v1.NamespaceAll,
 		fields.Everything())
@@ -147,7 +146,7 @@ func Pods(client *kubernetes.Clientset) {
 					Kind:      "pod",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv)
+				emitter.EmitChanges(inv, remoteEnd)
 			},
 
 			DeleteFunc: func(obj interface{}) {
@@ -161,7 +160,7 @@ func Pods(client *kubernetes.Clientset) {
 					Kind:      "pod",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv)
+				emitter.EmitChanges(inv, remoteEnd)
 			},
 
 			UpdateFunc: func(_, obj interface{}) {
@@ -175,7 +174,7 @@ func Pods(client *kubernetes.Clientset) {
 					Kind:      "pod",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv)
+				emitter.EmitChanges(inv, remoteEnd)
 			},
 		},
 	)

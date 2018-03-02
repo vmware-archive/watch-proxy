@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -12,9 +13,21 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var remoteEnd *string
+
 func main() {
 
-	// TODO: create flag for remote endpoint to emit changes to
+	remoteEnd = flag.String("remote", "", "URL to remote end point that will receive updates")
+	flag.Parse()
+
+	if *remoteEnd == "" {
+		// if we didn't get a flag pased to use check env vars
+		*remoteEnd = os.Getenv("REMOTE_ENDPOINT")
+	}
+	if *remoteEnd == "" {
+		// and if remoteEnd is still empty throw and error
+		log.Fatalln("Remote Endpoint URL is required")
+	}
 
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
@@ -33,17 +46,17 @@ func main() {
 
 	// watch namespaces
 	go func() {
-		cluster.Namespaces(clientset)
+		cluster.Namespaces(clientset, *remoteEnd)
 	}()
 
 	// watch deployments
 	go func() {
-		cluster.Deployments(clientset)
+		cluster.Deployments(clientset, *remoteEnd)
 	}()
 
 	// watch pods
 	go func() {
-		cluster.Pods(clientset)
+		cluster.Pods(clientset, *remoteEnd)
 	}()
 
 	signalChan := make(chan os.Signal, 1)
