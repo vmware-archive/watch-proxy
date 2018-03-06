@@ -4,9 +4,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/heptio/clerk/emitter"
+	"github.com/heptio/quartermaster/emitter"
 
-	"github.com/heptio/clerk/inventory"
+	"github.com/heptio/quartermaster/inventory"
 
 	"k8s.io/api/apps/v1beta2"
 

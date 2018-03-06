@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/heptio/clerk/cluster"
+	"github.com/heptio/quartermaster/cluster"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

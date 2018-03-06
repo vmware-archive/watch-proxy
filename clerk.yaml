@@ -3,7 +3,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: system:serviceaccount:kube-system:clerk-controller
+  name: system:serviceaccount:kube-system:quartermaster-controller
 rules:
 - apiGroups:
   - "*"
@@ -17,27 +17,27 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: system:serviceaccount:kube-system:clerk-controller
+  name: system:serviceaccount:kube-system:quartermaster-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: system:serviceaccount:kube-system:clerk-controller
+  name: system:serviceaccount:kube-system:quartermaster-controller
 subjects:
 - kind: ServiceAccount
-  name: clerk-controller
+  name: quartermaster-controller
   namespace: kube-system
 
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: clerk-controller
+  name: quartermaster-controller
 
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: clerk
+  name: quartermaster
 spec:
   replicas: 1
   strategy:
@@ -46,12 +46,12 @@ spec:
   template:
     metadata:
       labels:
-        app: clerk
+        app: quartermaster
     spec:
-      serviceAccountName: clerk-controller
+      serviceAccountName: quartermaster-controller
       containers:
-      - name: clerk
-        image: jpweber/clerk:0.1.5
+      - name: quartermaster
+        image: jpweber/quartermaster:0.1.5
         resources:
             requests:
                 memory: "128Mi"
