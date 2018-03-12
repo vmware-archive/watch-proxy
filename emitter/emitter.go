@@ -3,6 +3,7 @@ package emitter
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -15,7 +16,7 @@ func EmitChanges(newData interface{}, url string) {
 		log.Println("Error marshalling new data", err)
 	}
 
-	// fmt.Println(string(jsonBody))
+	fmt.Println("What's the URL %v\n", string(url))
 
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")

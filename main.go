@@ -6,10 +6,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/heptio/clerk/backup"
-	"github.com/heptio/clerk/emitter"
-	"github.com/heptio/clerk/ingestion"
-	"github.com/heptio/clerk/inventory"
+	"github.com/heptio/quartermaster/backup"
+	"github.com/heptio/quartermaster/cluster"
+	"github.com/heptio/quartermaster/emitter"
+	"github.com/heptio/quartermaster/ingestion"
+	"github.com/heptio/quartermaster/inventory"
+	"k8s.io/client-go/rest"
 )
 
 func dedupeSlice(s []string) []string {
@@ -37,6 +39,11 @@ func main() {
 
 	flag.Parse()
 
+	k8sConfig, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
 	b := backup.Backup{
 		Provider: *provider,
 		ConnInfo: backup.ConnectionInfo{
@@ -60,7 +67,7 @@ func main() {
 		unpackDir + "/resources/pods",
 	}
 
-	cluster := inventory.Cluster{}
+	clusterObj := inventory.Cluster{}
 	ns := inventory.Namespace{}
 	dep := inventory.Deployment{}
 	pod := inventory.Pod{}
@@ -80,15 +87,23 @@ func main() {
 					switch resourceType {
 					case "Namespace":
 						ns.DecodeNamespace(file)
-						cluster.Namespaces = append(cluster.Namespaces, ns)
+						clusterObj.Namespaces = append(clusterObj.Namespaces, ns)
+						go func() {
+							cluster.NamespacesController(clientset, *remoteEnd)
+						}()
 					case "Deployment":
 						dep.DecodeDeployment(file)
 						deployments = append(deployments, dep)
+						go func() {
+							cluster.DeploymentsController(clientset, *remoteEnd)
+						}()
 					case "Pod":
 						pod.DecodePod(file)
 						pods = append(pods, pod)
 						images[pod.Namespace] = append(images[pod.Namespace], pod.Images...)
-
+						go func() {
+							cluster.PodsController(clientset, *remoteEnd)
+						}()
 					}
 				}
 			}
