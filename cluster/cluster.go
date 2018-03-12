@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/heptio/quartermaster/config"
 	"github.com/heptio/quartermaster/emitter"
 
 	"github.com/heptio/quartermaster/inventory"
@@ -28,7 +29,7 @@ func Version(client *kubernetes.Clientset) string {
 }
 
 // Namespaces - Emit events on Namespace create and deletions
-func Namespaces(client *kubernetes.Clientset, remoteEnd string) {
+func Namespaces(client *kubernetes.Clientset, config config.Config) {
 
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "namespaces", v1.NamespaceAll,
 		fields.Everything())
@@ -46,7 +47,7 @@ func Namespaces(client *kubernetes.Clientset, remoteEnd string) {
 				}
 
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, remoteEnd)
+				emitter.EmitChanges(inv, config.RemoteEndpoint)
 
 				log.Printf("Namespace Created: %s",
 					ns.ObjectMeta.Name,
@@ -63,7 +64,7 @@ func Namespaces(client *kubernetes.Clientset, remoteEnd string) {
 				}
 
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, remoteEnd)
+				emitter.EmitChanges(inv, config.RemoteEndpoint)
 
 				log.Printf("Namespace Deleted: %s",
 					ns.ObjectMeta.Name,
@@ -82,7 +83,7 @@ func Namespaces(client *kubernetes.Clientset, remoteEnd string) {
 }
 
 // Deployments - Emit events on Deployment changes
-func Deployments(client *kubernetes.Clientset, remoteEnd string) {
+func Deployments(client *kubernetes.Clientset, config config.Config) {
 	watchlist := cache.NewListWatchFromClient(client.AppsV1beta2().RESTClient(), "deployments", v1.NamespaceAll,
 		fields.Everything())
 	_, controller := cache.NewInformer(
@@ -101,7 +102,7 @@ func Deployments(client *kubernetes.Clientset, remoteEnd string) {
 					Kind:            "deployment",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, remoteEnd)
+				emitter.EmitChanges(inv, config.RemoteEndpoint)
 			},
 			DeleteFunc: func(obj interface{}) {
 				dep := obj.(*v1beta2.Deployment)
@@ -114,7 +115,7 @@ func Deployments(client *kubernetes.Clientset, remoteEnd string) {
 					Kind:            "deployment",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, remoteEnd)
+				emitter.EmitChanges(inv, config.RemoteEndpoint)
 			},
 		},
 	)
@@ -126,7 +127,7 @@ func Deployments(client *kubernetes.Clientset, remoteEnd string) {
 	<-done
 }
 
-func Pods(client *kubernetes.Clientset, remoteEnd string) {
+func Pods(client *kubernetes.Clientset, config config.Config) {
 
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "pods", v1.NamespaceAll,
 		fields.Everything())
@@ -146,7 +147,7 @@ func Pods(client *kubernetes.Clientset, remoteEnd string) {
 					Kind:      "pod",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, remoteEnd)
+				emitter.EmitChanges(inv, config.RemoteEndpoint)
 			},
 
 			DeleteFunc: func(obj interface{}) {
@@ -160,7 +161,7 @@ func Pods(client *kubernetes.Clientset, remoteEnd string) {
 					Kind:      "pod",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, remoteEnd)
+				emitter.EmitChanges(inv, config.RemoteEndpoint)
 			},
 
 			UpdateFunc: func(_, obj interface{}) {
@@ -174,7 +175,7 @@ func Pods(client *kubernetes.Clientset, remoteEnd string) {
 					Kind:      "pod",
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, remoteEnd)
+				emitter.EmitChanges(inv, config.RemoteEndpoint)
 			},
 		},
 	)

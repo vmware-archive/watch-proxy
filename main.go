@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/heptio/quartermaster/cluster"
+	"github.com/heptio/quartermaster/config"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -17,26 +18,18 @@ var remoteEnd *string
 
 func main() {
 
-	remoteEnd = flag.String("remote", "", "URL to remote end point that will receive updates")
+	configFile := flag.String("c", "/etc/quartermaster/config.yaml", "Path to quartermaster config file")
 	flag.Parse()
-
-	if *remoteEnd == "" {
-		// if we didn't get a flag pased to use check env vars
-		*remoteEnd = os.Getenv("REMOTE_ENDPOINT")
-	}
-	if *remoteEnd == "" {
-		// and if remoteEnd is still empty throw and error
-		log.Fatalln("Remote Endpoint URL is required")
-	}
+	qmConfig := config.ReadConfig(*configFile)
 
 	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
+	k8sConfig, err := rest.InClusterConfig()
 	if err != nil {
 		panic(err.Error())
 	}
 
 	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -44,21 +37,29 @@ func main() {
 	// get the cluster version
 	// version := cluster.Version(clientset)
 
-	// watch namespaces
-	go func() {
-		cluster.Namespaces(clientset, *remoteEnd)
-	}()
+	// loop through list of resources to watch and startup watchers
+	// for those resources.
+	for _, resource := range qmConfig.ResourceWatch {
+		switch resource {
+		case "namespaces":
+			// watch namespaces
+			go func() {
+				cluster.Namespaces(clientset, qmConfig)
+			}()
+		case "pods":
+			// watch pods
+			go func() {
+				cluster.Pods(clientset, qmConfig)
+			}()
+		case "deployments":
+			// watch deployments
+			go func() {
+				cluster.Deployments(clientset, qmConfig)
+			}()
+		}
+	}
 
-	// watch deployments
-	go func() {
-		cluster.Deployments(clientset, *remoteEnd)
-	}()
-
-	// watch pods
-	go func() {
-		cluster.Pods(clientset, *remoteEnd)
-	}()
-
+	// create channel to watch for SIGNALs to exit
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
