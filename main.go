@@ -1,17 +1,33 @@
 package main
 
 import (
-	"fmt"
+	"flag"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/heptio/clerk/inventory"
-
-	"github.com/heptio/clerk/cluster"
+	"github.com/heptio/quartermaster/cluster"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
+var remoteEnd *string
+
 func main() {
+
+	remoteEnd = flag.String("remote", "", "URL to remote end point that will receive updates")
+	flag.Parse()
+
+	if *remoteEnd == "" {
+		// if we didn't get a flag pased to use check env vars
+		*remoteEnd = os.Getenv("REMOTE_ENDPOINT")
+	}
+	if *remoteEnd == "" {
+		// and if remoteEnd is still empty throw and error
+		log.Fatalln("Remote Endpoint URL is required")
+	}
 
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
@@ -26,27 +42,26 @@ func main() {
 	}
 
 	// get the cluster version
-	version := cluster.Version(clientset)
+	// version := cluster.Version(clientset)
 
-	// Init our cluster inventory with the version
-	inv := inventory.Cluster{
-		Version: version,
-	}
+	// watch namespaces
+	go func() {
+		cluster.Namespaces(clientset, *remoteEnd)
+	}()
 
-	// get the namespaces
-	inv.Namespaces = cluster.Namespaces(clientset)
+	// watch deployments
+	go func() {
+		cluster.Deployments(clientset, *remoteEnd)
+	}()
 
-	// init nsDeployments var for use in loop
-	nsDeployments := make(map[string][]inventory.Deployment, len(inv.Namespaces))
-	// fetch deployment information
-	// nsDeployments := make(map[string][]inventory.Deployment)
-	for _, ns := range inv.Namespaces {
-		nsDeployments[ns] = cluster.Deployments(clientset, ns)
-	}
+	// watch pods
+	go func() {
+		cluster.Pods(clientset, *remoteEnd)
+	}()
 
-	// take our adhoc nsDeployments and add it to the inventory struct
-	inv.Deployments = nsDeployments
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	<-signalChan
 
-	// testing
-	fmt.Printf("%+v", inv.Deployments)
+	log.Println("Shutdown signal received, exiting.")
 }

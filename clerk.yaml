@@ -1,0 +1,67 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:serviceaccount:kube-system:quartermaster-controller
+rules:
+- apiGroups:
+  - "*"
+  resources:
+  - "*"
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:serviceaccount:kube-system:quartermaster-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:serviceaccount:kube-system:quartermaster-controller
+subjects:
+- kind: ServiceAccount
+  name: quartermaster-controller
+  namespace: kube-system
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quartermaster-controller
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: quartermaster
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: quartermaster
+    spec:
+      serviceAccountName: quartermaster-controller
+      containers:
+      - name: quartermaster
+        image: jpweber/quartermaster:0.1.5
+        resources:
+            requests:
+                memory: "128Mi"
+                cpu: "100m"
+            limits:
+                memory: "512Mi"
+                cpu: "150m"
+        env:
+        - name: REMOTE_ENDPOINT # this part would be the name of the ENV Variable
+          valueFrom:
+            configMapKeyRef:
+              name: qm-envvars
+              key: remote_endpoint
