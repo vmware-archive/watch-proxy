@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/heptio/quartermaster/cluster"
 	"github.com/heptio/quartermaster/config"
+	"github.com/heptio/quartermaster/kubecluster"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -38,7 +38,7 @@ func main() {
 	// version := cluster.Version(clientset)
 
 	// fire up the watchers
-	doneChans := cluster.StartWatchers(clientset, qmConfig)
+	doneChans := kubecluster.StartWatchers(clientset, qmConfig)
 
 	// watch for changes to the config file and
 	// reload if the config and adjust watchers if there are changes
@@ -60,12 +60,12 @@ func main() {
 
 				//stop watches if we have any to stop
 				if len(qmConfig.StaleResources) > 0 {
-					cluster.StopWatchers(doneChans, qmConfig)
+					kubecluster.StopWatchers(doneChans, qmConfig)
 				}
 
 				// start any new watchers
 				if len(qmConfig.NewResources) > 0 {
-					cluster.StartWatchers(clientset, qmConfig)
+					kubecluster.StartWatchers(clientset, qmConfig)
 				}
 
 			}
