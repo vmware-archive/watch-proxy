@@ -94,7 +94,7 @@ func fileWatcher(changed chan bool, file string) {
 			}
 			// sleep for some time we we aren't always banging
 			// on the file system
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 10)
 		}
 	}()
 
