@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/heptio/quartermaster/cluster"
 	"github.com/heptio/quartermaster/config"
+	"github.com/heptio/quartermaster/kubecluster"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -37,27 +37,40 @@ func main() {
 	// get the cluster version
 	// version := cluster.Version(clientset)
 
-	// loop through list of resources to watch and startup watchers
-	// for those resources.
-	for _, resource := range qmConfig.ResourceWatch {
-		switch resource {
-		case "namespaces":
-			// watch namespaces
-			go func() {
-				cluster.Namespaces(clientset, qmConfig)
-			}()
-		case "pods":
-			// watch pods
-			go func() {
-				cluster.Pods(clientset, qmConfig)
-			}()
-		case "deployments":
-			// watch deployments
-			go func() {
-				cluster.Deployments(clientset, qmConfig)
-			}()
+	// fire up the watchers
+	doneChans := kubecluster.StartWatchers(clientset, qmConfig)
+
+	// watch for changes to the config file and
+	// reload if the config and adjust watchers if there are changes
+	fileChange := make(chan bool)
+
+	// create new file watcher on specified file
+	config.NewFileWatcher(fileChange, *configFile)
+
+	// Start the loop that reloads the configuration and starts or stops
+	go func() {
+		for {
+			select {
+			case _ = <-fileChange:
+				log.Println("Updating Config")
+				// create new config from updated config file
+				newConfig := config.ReadConfig(*configFile)
+				// compare the config structs so we know what watchers to stop and start
+				qmConfig.DiffConfig(qmConfig.ResourcesWatch, newConfig.ResourcesWatch)
+
+				//stop watches if we have any to stop
+				if len(qmConfig.StaleResources) > 0 {
+					kubecluster.StopWatchers(doneChans, qmConfig)
+				}
+
+				// start any new watchers
+				if len(qmConfig.NewResources) > 0 {
+					kubecluster.StartWatchers(clientset, qmConfig)
+				}
+
+			}
 		}
-	}
+	}()
 
 	// create channel to watch for SIGNALs to exit
 	signalChan := make(chan os.Signal, 1)

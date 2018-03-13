@@ -8,4 +8,4 @@ data:
     resources:
       - namespaces
       - pods
-      - deployments
+      # - deployments

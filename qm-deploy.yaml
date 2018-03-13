@@ -51,7 +51,7 @@ spec:
       serviceAccountName: quartermaster-controller
       containers:
       - name: quartermaster
-        image: jpweber/quartermaster:0.1.6
+        image: jpweber/quartermaster:0.1.7
         resources:
             requests:
                 memory: "128Mi"
