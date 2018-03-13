@@ -4,13 +4,16 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
 type Config struct {
 	RemoteEndpoint string   `yaml:"remoteEndpoint"`
-	ResourceWatch  []string `yaml:"resources"`
+	ResourcesWatch []string `yaml:"resources"`
+	NewResources   []string
+	StaleResources []string
 }
 
 // ReadConfig reads info from config file
@@ -28,4 +31,41 @@ func ReadConfig(configFile string) Config {
 	}
 
 	return config
+}
+
+func (c *Config) DiffConfig(old, new []string) {
+	sort.Strings(old)
+	sort.Strings(new)
+
+	keeps := []string{}
+	drops := []string{}
+	// make a copy of the data that we can remove from
+	// while we iterate on the original
+	// the modified news var will be what we build our final list from
+	news := new
+
+	for _, oRes := range old {
+		match := false
+		for i, nRes := range new {
+			if oRes == nRes {
+				keeps = append(keeps, oRes)
+				news = append(news[:i], news[i+1:]...)
+				// if we found a match mark the value as match = true
+				// and break the inner for loop
+				match = true
+				break
+			}
+		}
+
+		// if we got out of the inner for loop and we do not have match
+		// add the value to the drops slice
+		if match != true {
+			drops = append(drops, oRes)
+		}
+	}
+
+	c.NewResources = news
+	c.StaleResources = drops
+	c.ResourcesWatch = append(keeps, news...)
+
 }

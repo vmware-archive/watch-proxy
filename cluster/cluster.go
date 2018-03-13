@@ -29,7 +29,7 @@ func Version(client *kubernetes.Clientset) string {
 }
 
 // Namespaces - Emit events on Namespace create and deletions
-func Namespaces(client *kubernetes.Clientset, config config.Config) {
+func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bool) {
 
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "namespaces", v1.NamespaceAll,
 		fields.Everything())
@@ -75,10 +75,13 @@ func Namespaces(client *kubernetes.Clientset, config config.Config) {
 	)
 
 	stop := make(chan struct{})
-	done := make(chan bool)
 	go controller.Run(stop)
 	log.Println("Started Watching Namespaces")
 	<-done
+	// if we have made it past done close the stop channel
+	// to tell the controller to stop as well.
+	log.Println("Stopped Watching Namespaces")
+	close(stop)
 
 }
 

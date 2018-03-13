@@ -6,6 +6,6 @@ data:
   config.yaml: |-
     remoteEndpoint: "http://http-service-test.default.svc.cluster.local:8080/updates"
     resources:
-      - namespaces
+      # - namespaces
       - pods
       - deployments
