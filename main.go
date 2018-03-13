@@ -103,10 +103,14 @@ func main() {
 				qmConfig.DiffConfig(qmConfig.ResourcesWatch, newConfig.ResourcesWatch)
 
 				//stop watches if we have any to stop
-				stopWatchers(doneChans, qmConfig)
+				if len(qmConfig.StaleResources) > 0 {
+					stopWatchers(doneChans, qmConfig)
+				}
 
 				// start any new watchers
-				startWatchers(clientset, qmConfig)
+				if len(qmConfig.NewResources) > 0 {
+					startWatchers(clientset, qmConfig)
+				}
 
 			}
 		}
