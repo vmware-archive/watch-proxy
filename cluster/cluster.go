@@ -17,6 +17,66 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// StartWatchers - start up the k8s resource watchers
+func StartWatchers(client *kubernetes.Clientset, config config.Config) map[string]chan bool {
+	// loop through list of resources to watch and startup watchers
+	// for those resources.
+	resources := []string{}
+	// decide if we want to load the full set of resources. Usually at startup
+	// or just start up new watchers after config change
+	if len(config.NewResources) > 0 {
+		resources = config.NewResources
+	} else {
+		resources = config.ResourcesWatch
+	}
+
+	// create map to capture the channels used to signal done to the watcher
+	// go routines
+	doneChannels := make(map[string]chan bool)
+
+	// start the watchers
+	for _, resource := range resources {
+		switch resource {
+		case "namespaces":
+			nameDone := make(chan bool)
+			doneChannels[resource] = nameDone
+			// watch namespaces
+			go func() {
+				Namespaces(client, config, nameDone)
+			}()
+		case "pods":
+			// watch pods
+			podDone := make(chan bool)
+			doneChannels[resource] = podDone
+			// watch pods
+			go func() {
+				Pods(client, config, podDone)
+			}()
+		case "deployments":
+			depDone := make(chan bool)
+			doneChannels[resource] = depDone
+			// watch deployments
+			go func() {
+				Deployments(client, config, depDone)
+			}()
+		}
+	}
+
+	// return the map of done channels so we can stop things later if need be
+	return doneChannels
+}
+
+// StopWatchers - stop the watchers we no longer want running
+func StopWatchers(doneChannels map[string]chan bool, config config.Config) {
+	// loop through list of stale resource types and stop those watchers
+	for _, staleRes := range config.StaleResources {
+		log.Println("Stopping", staleRes)
+		// send true to the done channel for the respective resource
+		// to close the go routine
+		doneChannels[staleRes] <- true
+	}
+}
+
 // Version - get the version of k8s running on the cluster
 func Version(client *kubernetes.Clientset) string {
 
@@ -80,13 +140,13 @@ func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bo
 	<-done
 	// if we have made it past done close the stop channel
 	// to tell the controller to stop as well.
-	log.Println("Stopped Watching Namespaces")
 	close(stop)
+	log.Println("Stopped Watching Namespaces")
 
 }
 
 // Deployments - Emit events on Deployment changes
-func Deployments(client *kubernetes.Clientset, config config.Config) {
+func Deployments(client *kubernetes.Clientset, config config.Config, done chan bool) {
 	watchlist := cache.NewListWatchFromClient(client.AppsV1beta2().RESTClient(), "deployments", v1.NamespaceAll,
 		fields.Everything())
 	_, controller := cache.NewInformer(
@@ -124,13 +184,16 @@ func Deployments(client *kubernetes.Clientset, config config.Config) {
 	)
 
 	stop := make(chan struct{})
-	done := make(chan bool)
 	go controller.Run(stop)
 	log.Println("Started Watching Deployments")
 	<-done
+	// if we have made it past done close the stop channel
+	// to tell the controller to stop as well.
+	close(stop)
+	log.Println("Stopped Watching Deployments")
 }
 
-func Pods(client *kubernetes.Clientset, config config.Config) {
+func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "pods", v1.NamespaceAll,
 		fields.Everything())
@@ -183,10 +246,13 @@ func Pods(client *kubernetes.Clientset, config config.Config) {
 		},
 	)
 	stop := make(chan struct{})
-	done := make(chan bool)
 	go controller.Run(stop)
 	log.Println("Started Watching Pods")
 	<-done
+	// if we have made it past done close the stop channel
+	// to tell the controller to stop as well.
+	close(stop)
+	log.Println("Stopped Watching Pods")
 }
 
 func imagesFromContainers(containers []v1.Container) []string {

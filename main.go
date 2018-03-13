@@ -16,54 +16,6 @@ import (
 
 var remoteEnd *string
 
-func startWatchers(client *kubernetes.Clientset, config config.Config) map[string]chan bool {
-	// loop through list of resources to watch and startup watchers
-	// for those resources.
-	doneChannels := make(map[string]chan bool)
-
-	resources := []string{}
-	// decide if we want to load the full set of resources. Usually at startup
-	// or just start up new watchers after config change
-	if len(config.NewResources) > 0 {
-		resources = config.NewResources
-	} else {
-		resources = config.ResourcesWatch
-	}
-
-	// start the watchers
-	for _, resource := range resources {
-		switch resource {
-		case "namespaces":
-			done := make(chan bool)
-			doneChannels[resource] = done
-			// watch namespaces
-			go func() {
-				cluster.Namespaces(client, config, done)
-			}()
-		case "pods":
-			// watch pods
-			go func() {
-				cluster.Pods(client, config)
-			}()
-		case "deployments":
-			// watch deployments
-			go func() {
-				cluster.Deployments(client, config)
-			}()
-		}
-	}
-
-	return doneChannels
-}
-
-func stopWatchers(doneChannels map[string]chan bool, config config.Config) {
-
-	for _, staleRes := range config.StaleResources {
-		log.Println("Stopping", staleRes)
-		doneChannels[staleRes] <- true
-	}
-}
-
 func main() {
 
 	configFile := flag.String("c", "/etc/quartermaster/config.yaml", "Path to quartermaster config file")
@@ -86,30 +38,34 @@ func main() {
 	// version := cluster.Version(clientset)
 
 	// fire up the watchers
-	doneChans := startWatchers(clientset, qmConfig)
+	doneChans := cluster.StartWatchers(clientset, qmConfig)
 
 	// watch for changes to the config file and
 	// reload if the config and adjust watchers if there are changes
 	fileChange := make(chan bool)
-	fw := config.FileWatcher{}
-	fw.New(fileChange, *configFile)
+
+	// create new file watcher on specified file
+	config.NewFileWatcher(fileChange, *configFile)
+
+	// Start the loop that reloads the configuration and starts or stops
 	go func() {
 		for {
 			select {
 			case _ = <-fileChange:
 				log.Println("Updating Config")
+				// create new config from updated config file
 				newConfig := config.ReadConfig(*configFile)
-				// fmt.Println(qmConfig)
+				// compare the config structs so we know what watchers to stop and start
 				qmConfig.DiffConfig(qmConfig.ResourcesWatch, newConfig.ResourcesWatch)
 
 				//stop watches if we have any to stop
 				if len(qmConfig.StaleResources) > 0 {
-					stopWatchers(doneChans, qmConfig)
+					cluster.StopWatchers(doneChans, qmConfig)
 				}
 
 				// start any new watchers
 				if len(qmConfig.NewResources) > 0 {
-					startWatchers(clientset, qmConfig)
+					cluster.StartWatchers(clientset, qmConfig)
 				}
 
 			}

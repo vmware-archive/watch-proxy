@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"time"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -67,5 +68,34 @@ func (c *Config) DiffConfig(old, new []string) {
 	c.NewResources = news
 	c.StaleResources = drops
 	c.ResourcesWatch = append(keeps, news...)
+
+}
+
+// New creates new file watcher
+func NewFileWatcher(ch chan bool, file string) {
+	fileWatcher(ch, file)
+}
+
+func fileWatcher(changed chan bool, file string) {
+	go func() {
+		// create start time of now so it always loads the first time
+		startTime := time.Now()
+		for {
+			info, err := os.Stat(file)
+			if err != nil {
+				log.Println("Error accessing file", err)
+			}
+
+			modTime := info.ModTime()
+			if startTime != modTime {
+				// reset the start time to our newly seen modified time
+				startTime = modTime
+				changed <- true
+			}
+			// sleep for some time we we aren't always banging
+			// on the file system
+			time.Sleep(time.Second * 3)
+		}
+	}()
 
 }
