@@ -2,7 +2,11 @@ package kubecluster
 
 import (
 	"log"
+	"sync"
 	"time"
+
+	"github.com/pborman/uuid"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/heptio/quartermaster/config"
 	"github.com/heptio/quartermaster/emitter"
@@ -163,6 +167,7 @@ func Deployments(client *kubernetes.Clientset, config config.Config, done chan b
 					ReplicasDesired: *dep.Spec.Replicas,
 					Event:           "created",
 					Kind:            "deployment",
+					UID:             NewUID(),
 				}
 				// sent the update to remote endpoint
 				emitter.EmitChanges(inv, config.RemoteEndpoint)
@@ -176,6 +181,7 @@ func Deployments(client *kubernetes.Clientset, config config.Config, done chan b
 					ReplicasDesired: *dep.Spec.Replicas,
 					Event:           "deleted",
 					Kind:            "deployment",
+					UID:             NewUID(),
 				}
 				// sent the update to remote endpoint
 				emitter.EmitChanges(inv, config.RemoteEndpoint)
@@ -211,6 +217,7 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					Images:    imagesFromContainers(pod.Spec.Containers),
 					Event:     "created",
 					Kind:      "pod",
+					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
 				emitter.EmitChanges(inv, config.RemoteEndpoint)
@@ -225,6 +232,7 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					Images:    imagesFromContainers(pod.Spec.Containers),
 					Event:     "deleted",
 					Kind:      "pod",
+					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
 				emitter.EmitChanges(inv, config.RemoteEndpoint)
@@ -239,6 +247,7 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					Images:    imagesFromContainers(pod.Spec.Containers),
 					Event:     "modified",
 					Kind:      "pod",
+					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
 				emitter.EmitChanges(inv, config.RemoteEndpoint)
@@ -263,4 +272,23 @@ func imagesFromContainers(containers []v1.Container) []string {
 	}
 
 	return images
+}
+
+var uuidLock sync.Mutex
+var lastUUID uuid.UUID
+
+// Copied from the Kubernetes repo: https://github.com/kubernetes/apimachinery/blob/release-1.10/pkg/util/uuid/uuid.go
+func NewUID() types.UID {
+	uuidLock.Lock()
+	defer uuidLock.Unlock()
+	result := uuid.NewUUID()
+	// The UUID package is naive and can generate identical UUIDs if the
+	// time interval is quick enough.
+	// The UUID uses 100 ns increments so it's short enough to actively
+	// wait for a new value.
+	for uuid.Equal(lastUUID, result) == true {
+		result = uuid.NewUUID()
+	}
+	lastUUID = result
+	return types.UID(result.String())
 }
