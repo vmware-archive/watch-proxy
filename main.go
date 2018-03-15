@@ -39,6 +39,7 @@ func main() {
 
 	// fire up the watchers
 	doneChans := kubecluster.StartWatchers(clientset, qmConfig)
+	kubecluster.Initialize(clientset, qmConfig)
 
 	// watch for changes to the config file and
 	// reload if the config and adjust watchers if there are changes

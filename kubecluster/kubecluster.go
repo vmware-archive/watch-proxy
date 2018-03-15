@@ -1,25 +1,102 @@
 package kubecluster
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/pborman/uuid"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/heptio/quartermaster/config"
 	"github.com/heptio/quartermaster/emitter"
-
 	"github.com/heptio/quartermaster/inventory"
 
 	"k8s.io/api/apps/v1beta2"
-
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
+
+// Takes a snapshot of the cluster and creates the Cluster object
+var (
+	uuidLock sync.Mutex
+	lastUUID uuid.UUID
+)
+
+func Initialize(client *kubernetes.Clientset, config config.Config) {
+
+	cluster := new(inventory.Cluster)
+	cluster.Deployments = make(map[string][]inventory.Deployment)
+	cluster.Pods = make(map[string][]inventory.Pod)
+	clusterPods := []inventory.Pod{}
+	clusterPod := inventory.Pod{}
+	clusterDeployment := inventory.Deployment{}
+	cluster.UID = NewUID()
+	cluster.Version = Version(client)
+	cluster.Name = GetClusterName(client)
+
+	//Get namespaces, since the other objects are based on namespace names as Keys
+	//we willl loop over the namespaces to construct the rest of the inventory.
+	namespaces, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("Could not get namespaces", err)
+	}
+	for _, ns := range namespaces.Items {
+		//create the cluster namespace struct and add it to the cluster list
+		clusterNamespace := inventory.Namespace{
+			Name:  ns.Name,
+			Event: "created",
+			Kind:  "namespace",
+			UID:   NewUID(),
+		}
+
+		cluster.Namespaces = append(cluster.Namespaces, clusterNamespace)
+
+		deployments, err := client.AppsV1().Deployments(ns.Name).List(metav1.ListOptions{})
+		if err != nil {
+			log.Println("Could not get deployments", err)
+		}
+		for _, deployment := range deployments.Items {
+			clusterDeployment = inventory.Deployment{
+				Name:            deployment.ObjectMeta.Name,
+				Namespace:       deployment.ObjectMeta.Namespace,
+				Labels:          deployment.ObjectMeta.Labels,
+				ReplicasDesired: *deployment.Spec.Replicas,
+				Event:           "created",
+				Kind:            "deployment",
+				UID:             NewUID(),
+			}
+			//clusterDeployments = append(clusterDeployments, clusterDeployment)
+			cluster.Deployments[ns.Name] = append(cluster.Deployments[ns.Name], clusterDeployment)
+
+		}
+
+		pods, err := client.CoreV1().Pods(ns.Name).List(metav1.ListOptions{})
+		if err != nil {
+			log.Println("Could not get pods", err)
+		}
+		for _, pod := range pods.Items {
+			clusterPod = inventory.Pod{
+				Name:      pod.ObjectMeta.Name,
+				Namespace: pod.ObjectMeta.Namespace,
+				Labels:    pod.ObjectMeta.Labels,
+				Images:    imagesFromContainers(pod.Spec.Containers),
+				Event:     "created",
+				Kind:      "pod",
+				UID:       NewUID(),
+			}
+			clusterPods = append(clusterPods, clusterPod)
+		}
+		cluster.Pods[ns.Name] = clusterPods
+
+	}
+	fmt.Printf("Constructed this cluster: %v", cluster)
+	emitter.EmitChanges(cluster, config.RemoteEndpoint)
+}
 
 // StartWatchers - start up the k8s resource watchers
 func StartWatchers(client *kubernetes.Clientset, config config.Config) map[string]chan bool {
@@ -92,6 +169,17 @@ func Version(client *kubernetes.Clientset) string {
 
 }
 
+func GetClusterName(client *kubernetes.Clientset) string {
+	nodes, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("Could not get nodes", err)
+	}
+	node := nodes.Items[0]
+	clusterName := node.ObjectMeta.Labels["cluster-name"]
+
+	return clusterName
+}
+
 // Namespaces - Emit events on Namespace create and deletions
 func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bool) {
 
@@ -108,6 +196,7 @@ func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bo
 					Name:  ns.ObjectMeta.Name,
 					Event: "created",
 					Kind:  "namespace",
+					UID:   NewUID(),
 				}
 
 				// sent the update to remote endpoint
@@ -125,6 +214,7 @@ func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bo
 					Name:  ns.ObjectMeta.Name,
 					Event: "deleted",
 					Kind:  "namespace",
+					UID:   NewUID(),
 				}
 
 				// sent the update to remote endpoint
@@ -273,9 +363,6 @@ func imagesFromContainers(containers []v1.Container) []string {
 
 	return images
 }
-
-var uuidLock sync.Mutex
-var lastUUID uuid.UUID
 
 // Copied from the Kubernetes repo: https://github.com/kubernetes/apimachinery/blob/release-1.10/pkg/util/uuid/uuid.go
 func NewUID() types.UID {
