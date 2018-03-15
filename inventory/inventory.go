@@ -13,8 +13,10 @@ type Inventory struct {
 type Cluster struct {
 	UID         types.UID
 	Version     string
-	Namespaces  []string
+	Name        string
+	Namespaces  []Namespace
 	Deployments map[string][]Deployment
+	Pods        map[string][]Pod
 }
 
 type Namespace struct {
