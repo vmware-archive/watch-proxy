@@ -8,4 +8,5 @@ data:
     resources:
       - namespaces
       - pods
-      # - deployments
+      - deployments
+    deltaUpdates: false # false here will provide a full cluster object mapping for every change 

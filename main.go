@@ -34,10 +34,10 @@ func main() {
 		panic(err.Error())
 	}
 
-	// get the cluster version
-	// version := cluster.Version(clientset)
-
-	kubecluster.Initialize(clientset, qmConfig)
+	// only init a whole cluster object if we are NOT doing delta updates
+	if !qmConfig.DeltaUpdates {
+		kubecluster.Initialize(clientset, qmConfig)
+	}
 
 	// fire up the watchers
 	doneChans := kubecluster.StartWatchers(clientset, qmConfig)
