@@ -25,11 +25,12 @@ import (
 var (
 	uuidLock sync.Mutex
 	lastUUID uuid.UUID
+	cluster  inventory.Cluster
 )
 
 func Initialize(client *kubernetes.Clientset, config config.Config) {
 
-	cluster := new(inventory.Cluster)
+	//cluster := new(inventory.Cluster)
 	cluster.Deployments = make(map[string][]inventory.Deployment)
 	cluster.Pods = make(map[string][]inventory.Pod)
 	clusterPods := []inventory.Pod{}
@@ -94,7 +95,7 @@ func Initialize(client *kubernetes.Clientset, config config.Config) {
 		cluster.Pods[ns.Name] = clusterPods
 
 	}
-	fmt.Printf("Constructed this cluster: %v", cluster)
+	fmt.Printf("Constructed this cluster: %v\n", cluster)
 	emitter.EmitChanges(cluster, config.RemoteEndpoint)
 }
 
@@ -200,7 +201,8 @@ func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bo
 				}
 
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, config.RemoteEndpoint)
+				//emitter.EmitChanges(inv, config.RemoteEndpoint)
+				UpdateObject(inv, config)
 
 				log.Printf("Namespace Created: %s",
 					ns.ObjectMeta.Name,
@@ -218,7 +220,8 @@ func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bo
 				}
 
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, config.RemoteEndpoint)
+				//emitter.EmitChanges(inv, config.RemoteEndpoint)
+				UpdateObject(inv, config)
 
 				log.Printf("Namespace Deleted: %s",
 					ns.ObjectMeta.Name,
@@ -260,7 +263,8 @@ func Deployments(client *kubernetes.Clientset, config config.Config, done chan b
 					UID:             NewUID(),
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, config.RemoteEndpoint)
+				//emitter.EmitChanges(inv, config.RemoteEndpoint)
+				UpdateObject(inv, config)
 			},
 			DeleteFunc: func(obj interface{}) {
 				dep := obj.(*v1beta2.Deployment)
@@ -274,7 +278,8 @@ func Deployments(client *kubernetes.Clientset, config config.Config, done chan b
 					UID:             NewUID(),
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, config.RemoteEndpoint)
+				//emitter.EmitChanges(inv, config.RemoteEndpoint)
+				UpdateObject(inv, config)
 			},
 		},
 	)
@@ -310,7 +315,8 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, config.RemoteEndpoint)
+				//emitter.EmitChanges(inv, config.RemoteEndpoint)
+				UpdateObject(inv, config)
 			},
 
 			DeleteFunc: func(obj interface{}) {
@@ -325,7 +331,8 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, config.RemoteEndpoint)
+				//emitter.EmitChanges(inv, config.RemoteEndpoint)
+				UpdateObject(inv, config)
 			},
 
 			UpdateFunc: func(_, obj interface{}) {
@@ -340,7 +347,8 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
-				emitter.EmitChanges(inv, config.RemoteEndpoint)
+				//emitter.EmitChanges(inv, config.RemoteEndpoint)
+				UpdateObject(inv, config)
 			},
 		},
 	)
@@ -378,4 +386,76 @@ func NewUID() types.UID {
 	}
 	lastUUID = result
 	return types.UID(result.String())
+}
+
+func UpdateObject(i interface{}, config config.Config) {
+	var newObject bool
+	switch i.(type) {
+	case inventory.Namespace:
+		newObject = true
+		updateObj, _ := i.(inventory.Namespace)
+		switch updateObj.Event {
+		case "created":
+			for index, ns := range cluster.Namespaces {
+				if ns.Name == updateObj.Name {
+					fmt.Printf("Adding Namespace: %v\n", updateObj.Name)
+					cluster.Namespaces[index] = updateObj
+					newObject = false
+				}
+			}
+			if newObject == true {
+				fmt.Printf("NS doesn't exist, adding it %v\n", updateObj.Name)
+				cluster.Namespaces = append(cluster.Namespaces, updateObj)
+			}
+		case "deleted":
+			for index, ns := range cluster.Namespaces {
+				if ns.Name == updateObj.Name {
+					cluster.Namespaces = append(cluster.Namespaces[:index], cluster.Namespaces[index+1:]...)
+				}
+			}
+		}
+	case inventory.Deployment:
+		newObject = true
+		updateObj, _ := i.(inventory.Deployment)
+		switch updateObj.Event {
+		case "created":
+			for index, dep := range cluster.Deployments[updateObj.Namespace] {
+				if dep.Name == updateObj.Name {
+					cluster.Deployments[updateObj.Namespace][index] = updateObj
+					newObject = false
+				}
+			}
+			if newObject == true {
+				cluster.Deployments[updateObj.Namespace] = append(cluster.Deployments[updateObj.Namespace], updateObj)
+			}
+		case "deleted":
+			for index, dep := range cluster.Deployments[updateObj.Namespace] {
+				if dep.Name == updateObj.Name {
+					cluster.Deployments[updateObj.Namespace] = append(cluster.Deployments[updateObj.Namespace][:index], cluster.Deployments[updateObj.Namespace][index+1:]...)
+				}
+			}
+		}
+	case inventory.Pod:
+		newObject = true
+		updateObj, _ := i.(inventory.Pod)
+		switch updateObj.Event {
+		case "created":
+			for index, pod := range cluster.Pods[updateObj.Namespace] {
+				if pod.Name == updateObj.Name {
+					cluster.Pods[updateObj.Namespace][index] = updateObj
+					newObject = false
+				}
+			}
+			if newObject == true {
+				cluster.Pods[updateObj.Namespace] = append(cluster.Pods[updateObj.Namespace], updateObj)
+			}
+		case "deleted":
+			for index, pod := range cluster.Pods[updateObj.Namespace] {
+				if pod.Name == updateObj.Name {
+					cluster.Pods[updateObj.Namespace] = append(cluster.Pods[updateObj.Namespace][:index], cluster.Pods[updateObj.Namespace][index+1:]...)
+				}
+			}
+		}
+	}
+	emitter.EmitChanges(cluster, config.RemoteEndpoint)
 }
