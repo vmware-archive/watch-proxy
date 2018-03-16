@@ -37,6 +37,8 @@ func main() {
 	// get the cluster version
 	// version := cluster.Version(clientset)
 
+	kubecluster.Initialize(clientset, qmConfig)
+
 	// fire up the watchers
 	doneChans := kubecluster.StartWatchers(clientset, qmConfig)
 

@@ -1,4 +1,5 @@
 
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -51,7 +52,7 @@ spec:
       serviceAccountName: quartermaster-controller
       containers:
       - name: quartermaster
-        image: jpweber/quartermaster:0.1.7
+        image: quay.io/nicholas_lane/quartermaster:0.1.8
         resources:
             requests:
                 memory: "128Mi"
