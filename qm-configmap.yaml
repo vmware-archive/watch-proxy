@@ -4,6 +4,7 @@ metadata:
   name: quartermaster
 data:
   config.yaml: |-
+    clusterName: "ClusterNAME"
     remoteEndpoint: "http://http-service-test.default.svc.cluster.local:8080/updates"
     resources:
       - namespaces

@@ -3,8 +3,11 @@ package kubecluster
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/oklog/ulid"
 
 	"github.com/pborman/uuid"
 
@@ -38,8 +41,11 @@ func Initialize(client *kubernetes.Clientset, config config.Config) {
 	clusterDeployment := inventory.Deployment{}
 	cluster.UID = NewUID()
 	cluster.Version = Version(client)
-	cluster.Name = GetClusterName(client)
-
+	if len(config.ClusterName) > 0 {
+		cluster.Name = config.ClusterName
+	} else {
+		cluster.Name = GetClusterName(client)
+	}
 	//Get namespaces, since the other objects are based on namespace names as Keys
 	//we willl loop over the namespaces to construct the rest of the inventory.
 	namespaces, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
@@ -176,9 +182,15 @@ func GetClusterName(client *kubernetes.Clientset) string {
 		log.Println("Could not get nodes", err)
 	}
 	node := nodes.Items[0]
-	clusterName := node.ObjectMeta.Labels["cluster-name"]
+	if clusterName, ok := node.ObjectMeta.Labels["cluster-name"]; ok {
+		return clusterName
+	} else {
+		t := time.Unix(1000000, 0)
+		entropy := rand.New(rand.NewSource(t.UnixNano()))
+		clusterName := fmt.Sprint(ulid.MustNew(ulid.Timestamp(t), entropy))
+		return clusterName
+	}
 
-	return clusterName
 }
 
 // Namespaces - Emit events on Namespace create and deletions
