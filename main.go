@@ -39,6 +39,8 @@ func main() {
 		kubecluster.Initialize(clientset, qmConfig)
 	}
 
+	kubecluster.Initialize(clientset, qmConfig)
+
 	// fire up the watchers
 	doneChans := kubecluster.StartWatchers(clientset, qmConfig)
 

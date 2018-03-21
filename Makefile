@@ -5,7 +5,7 @@ deps: ## Install/Update depdendencies
 	dep ensure -v
 
 test: ## Run tests
-	go test ./...
+	go test ./... -v
 
 image: ## Build Docker image
 	docker build .
