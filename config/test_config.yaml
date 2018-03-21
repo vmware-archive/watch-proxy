@@ -1,0 +1,6 @@
+---
+remoteEndpoint: "http://test.default.svc.cluster.local"
+resources:
+  - namespaces
+  - pods
+  - deployments

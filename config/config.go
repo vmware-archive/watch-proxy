@@ -16,6 +16,7 @@ type Config struct {
 	NewResources   []string
 	StaleResources []string
 	ClusterName    string `yaml:"clusterName"`
+	DeltaUpdates   bool   `yaml:"deltaUpdates"`
 }
 
 // ReadConfig reads info from config file

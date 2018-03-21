@@ -34,8 +34,10 @@ func main() {
 		panic(err.Error())
 	}
 
-	// get the cluster version
-	// version := cluster.Version(clientset)
+	// only init a whole cluster object if we are NOT doing delta updates
+	if !qmConfig.DeltaUpdates {
+		kubecluster.Initialize(clientset, qmConfig)
+	}
 
 	kubecluster.Initialize(clientset, qmConfig)
 

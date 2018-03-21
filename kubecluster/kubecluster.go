@@ -212,9 +212,11 @@ func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bo
 					UID:   NewUID(),
 				}
 
-				// sent the update to remote endpoint
-				//emitter.EmitChanges(inv, config.RemoteEndpoint)
-				UpdateObject(inv, config)
+				if config.DeltaUpdates {
+					emitter.EmitChanges(inv, config.RemoteEndpoint)
+				} else {
+					UpdateObject(inv, config)
+				}
 
 				log.Printf("Namespace Created: %s",
 					ns.ObjectMeta.Name,
@@ -232,8 +234,11 @@ func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bo
 				}
 
 				// sent the update to remote endpoint
-				//emitter.EmitChanges(inv, config.RemoteEndpoint)
-				UpdateObject(inv, config)
+				if config.DeltaUpdates {
+					emitter.EmitChanges(inv, config.RemoteEndpoint)
+				} else {
+					UpdateObject(inv, config)
+				}
 
 				log.Printf("Namespace Deleted: %s",
 					ns.ObjectMeta.Name,
@@ -275,8 +280,11 @@ func Deployments(client *kubernetes.Clientset, config config.Config, done chan b
 					UID:             NewUID(),
 				}
 				// sent the update to remote endpoint
-				//emitter.EmitChanges(inv, config.RemoteEndpoint)
-				UpdateObject(inv, config)
+				if config.DeltaUpdates {
+					emitter.EmitChanges(inv, config.RemoteEndpoint)
+				} else {
+					UpdateObject(inv, config)
+				}
 			},
 			DeleteFunc: func(obj interface{}) {
 				dep := obj.(*v1beta2.Deployment)
@@ -290,8 +298,11 @@ func Deployments(client *kubernetes.Clientset, config config.Config, done chan b
 					UID:             NewUID(),
 				}
 				// sent the update to remote endpoint
-				//emitter.EmitChanges(inv, config.RemoteEndpoint)
-				UpdateObject(inv, config)
+				if config.DeltaUpdates {
+					emitter.EmitChanges(inv, config.RemoteEndpoint)
+				} else {
+					UpdateObject(inv, config)
+				}
 			},
 		},
 	)
@@ -327,8 +338,11 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
-				//emitter.EmitChanges(inv, config.RemoteEndpoint)
-				UpdateObject(inv, config)
+				if config.DeltaUpdates {
+					emitter.EmitChanges(inv, config.RemoteEndpoint)
+				} else {
+					UpdateObject(inv, config)
+				}
 			},
 
 			DeleteFunc: func(obj interface{}) {
@@ -343,8 +357,11 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
-				//emitter.EmitChanges(inv, config.RemoteEndpoint)
-				UpdateObject(inv, config)
+				if config.DeltaUpdates {
+					emitter.EmitChanges(inv, config.RemoteEndpoint)
+				} else {
+					UpdateObject(inv, config)
+				}
 			},
 
 			UpdateFunc: func(_, obj interface{}) {
@@ -359,8 +376,11 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 					UID:       NewUID(),
 				}
 				// sent the update to remote endpoint
-				//emitter.EmitChanges(inv, config.RemoteEndpoint)
-				UpdateObject(inv, config)
+				if config.DeltaUpdates {
+					emitter.EmitChanges(inv, config.RemoteEndpoint)
+				} else {
+					UpdateObject(inv, config)
+				}
 			},
 		},
 	)
@@ -384,7 +404,8 @@ func imagesFromContainers(containers []v1.Container) []string {
 	return images
 }
 
-// Copied from the Kubernetes repo: https://github.com/kubernetes/apimachinery/blob/release-1.10/pkg/util/uuid/uuid.go
+// Copied from the Kubernetes repo:
+// https://github.com/kubernetes/apimachinery/blob/release-1.10/pkg/util/uuid/uuid.go
 func NewUID() types.UID {
 	uuidLock.Lock()
 	defer uuidLock.Unlock()
