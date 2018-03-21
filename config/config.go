@@ -15,6 +15,7 @@ type Config struct {
 	ResourcesWatch []string `yaml:"resources"`
 	NewResources   []string
 	StaleResources []string
+	DeltaUpdates   bool `yaml:"deltaUpdates"`
 }
 
 // ReadConfig reads info from config file
