@@ -17,7 +17,6 @@ func EmitChanges(newData interface{}, url string) {
 	}
 
 	fmt.Printf("URL %v\n", url)
-	//fmt.Printf("Body %v", jsonBody)
 
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
