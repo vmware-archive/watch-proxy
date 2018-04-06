@@ -32,7 +32,6 @@ var (
 )
 
 func Initialize(client *kubernetes.Clientset, config config.Config) {
-
 	//cluster := new(inventory.Cluster)
 	cluster.Deployments = make(map[string][]inventory.Deployment)
 	cluster.Pods = make(map[string][]inventory.Pod)
@@ -40,7 +39,7 @@ func Initialize(client *kubernetes.Clientset, config config.Config) {
 	clusterPod := inventory.Pod{}
 	clusterDeployment := inventory.Deployment{}
 	cluster.UID = NewUID()
-	cluster.Version = Version(client)
+	cluster.Version = GetK8sVersion(client)
 	if len(config.ClusterName) > 0 {
 		cluster.Name = config.ClusterName
 	} else {
@@ -165,9 +164,8 @@ func StopWatchers(doneChannels map[string]chan bool, config config.Config) {
 	}
 }
 
-// Version - get the version of k8s running on the cluster
-func Version(client *kubernetes.Clientset) string {
-
+// GetK8sVersion - get the version of k8s running on the cluster
+func GetK8sVersion(client *kubernetes.Clientset) string {
 	version, err := client.DiscoveryClient.ServerVersion()
 	if err != nil {
 		log.Println("Could not get server version", err)
@@ -195,7 +193,6 @@ func GetClusterName(client *kubernetes.Clientset) string {
 
 // Namespaces - Emit events on Namespace create and deletions
 func Namespaces(client *kubernetes.Clientset, config config.Config, done chan bool) {
-
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "namespaces", v1.NamespaceAll,
 		fields.Everything())
 	_, controller := cache.NewInformer(
@@ -318,7 +315,6 @@ func Deployments(client *kubernetes.Clientset, config config.Config, done chan b
 }
 
 func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
-
 	watchlist := cache.NewListWatchFromClient(client.Core().RESTClient(), "pods", v1.NamespaceAll,
 		fields.Everything())
 	_, controller := cache.NewInformer(
@@ -395,7 +391,6 @@ func Pods(client *kubernetes.Clientset, config config.Config, done chan bool) {
 }
 
 func imagesFromContainers(containers []v1.Container) []string {
-
 	images := []string{}
 	for _, cont := range containers {
 		images = append(images, cont.Image)

@@ -19,21 +19,22 @@ type Config struct {
 	DeltaUpdates   bool   `yaml:"deltaUpdates"`
 }
 
-// ReadConfig reads info from config file
-func ReadConfig(configFile string) Config {
-	_, err := os.Stat(configFile)
+// ReadConfig reads info from a config file based on the passed configPath.
+// If there's an issue locating, reading, or parsing the config, an error is
+// returned.
+func ReadConfig(configPath string) (*Config, error) {
+	fileBytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Fatal("Config file is missing: ", configFile)
+		return nil, err
 	}
-	file, _ := os.Open(configFile)
-	fileBytes, err := ioutil.ReadAll(file)
+
 	var config Config
 	err = yaml.Unmarshal(fileBytes, &config)
 	if err != nil {
-		log.Fatalln("config unmarshaling error:", err)
+		return nil, err
 	}
 
-	return config
+	return &config, nil
 }
 
 func (c *Config) DiffConfig(old, new []string) {
@@ -70,7 +71,6 @@ func (c *Config) DiffConfig(old, new []string) {
 	c.NewResources = news
 	c.StaleResources = drops
 	c.ResourcesWatch = append(keeps, news...)
-
 }
 
 // New creates new file watcher

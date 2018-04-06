@@ -9,7 +9,6 @@ import (
 )
 
 func TestEmitChanges(t *testing.T) {
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contents, err := ioutil.ReadAll(r.Body)
 		if err != nil {
