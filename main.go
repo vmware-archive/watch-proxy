@@ -9,32 +9,31 @@ import (
 
 	"github.com/heptio/quartermaster/config"
 	"github.com/heptio/quartermaster/kubecluster"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 var remoteEnd *string
 
 func main() {
-
-	configFile := flag.String("c", "/etc/quartermaster/config.yaml", "Path to quartermaster config file")
+	// When running as a pod in-cluster, a kubeconfig is not needed. Instead this will make use of the service account injected into the pod.
+	// However, allow the use of a local kubeconfig as this can make local development & testing easier.
+	kubeconfigPath := *flag.String("kubeconfig", "", "Path to a kubeconfig file")
+	configFile := *flag.String("c", "/etc/quartermaster/config.yaml", "Path to quartermaster config file")
 	flag.Parse()
-	qmConfig := config.ReadConfig(*configFile)
 
-	// creates the in-cluster config
-	k8sConfig, err := rest.InClusterConfig()
+	parsedConfig, err := config.ReadConfig(configFile)
 	if err != nil {
 		panic(err.Error())
 	}
+	qmConfig := *parsedConfig
 
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(k8sConfig)
+	//TOOD(joshrosso): add flag parsing for getting literal kubeconfig
+	clientset, err := kubecluster.NewK8sClient(kubeconfigPath)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	// only init a whole cluster object if we are NOT doing delta updates
+	// TODO(joshrosso): get clarity on why we need this if, appears this exact call will be made below?
 	if !qmConfig.DeltaUpdates {
 		kubecluster.Initialize(clientset, qmConfig)
 	}
@@ -49,7 +48,7 @@ func main() {
 	fileChange := make(chan bool)
 
 	// create new file watcher on specified file
-	config.NewFileWatcher(fileChange, *configFile)
+	config.NewFileWatcher(fileChange, configFile)
 
 	// Start the loop that reloads the configuration and starts or stops
 	go func() {
@@ -58,7 +57,13 @@ func main() {
 			case _ = <-fileChange:
 				log.Println("Updating Config")
 				// create new config from updated config file
-				newConfig := config.ReadConfig(*configFile)
+				newConfig, err := config.ReadConfig(configFile)
+				// if the new config is invalid, skip it until next update
+				if err != nil {
+					log.Printf("configuration file was invalid with error: %s.", err.Error())
+					break
+				}
+
 				// compare the config structs so we know what watchers to stop and start
 				qmConfig.DiffConfig(qmConfig.ResourcesWatch, newConfig.ResourcesWatch)
 

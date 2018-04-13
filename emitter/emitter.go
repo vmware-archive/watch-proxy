@@ -10,7 +10,6 @@ import (
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
 func EmitChanges(newData interface{}, url string) {
-
 	jsonBody, err := json.Marshal(newData)
 	if err != nil {
 		log.Println("Error marshalling new data", err)

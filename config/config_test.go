@@ -17,7 +17,10 @@ func TestReadConfig(t *testing.T) {
 			"deployments",
 		},
 	}
-	testConf := ReadConfig("test_config.yaml")
+	testConf, err := ReadConfig("test_config.yaml")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 
 	if goodConfig.RemoteEndpoint != testConf.RemoteEndpoint {
 		t.Errorf("RemoteEndpoint Configurations do not match, got: %v, want: %v.",
@@ -36,7 +39,6 @@ func TestReadConfig(t *testing.T) {
 }
 
 func TestDiffConfig(t *testing.T) {
-
 	oldRes := []string{"namespaces", "pods"}
 	newRes := []string{"deployments", "pods"}
 	newResWatch := []string{"deployments", "pods"}
@@ -64,11 +66,9 @@ func TestDiffConfig(t *testing.T) {
 				testConfig.ResourcesWatch[i], newResWatch[i])
 		}
 	}
-
 }
 
 func TestFileWatcher(t *testing.T) {
-
 	fileChange := make(chan bool)
 	buf := []byte("foo")
 	_ = ioutil.WriteFile("./file.test", buf, 0644)
@@ -89,5 +89,4 @@ func TestFileWatcher(t *testing.T) {
 	buf = []byte("test")
 	_ = ioutil.WriteFile("./file.test", buf, 0644)
 	defer os.Remove("./file.test")
-
 }
