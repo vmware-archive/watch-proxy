@@ -100,7 +100,6 @@ func Initialize(client *kubernetes.Clientset, config config.Config) {
 		cluster.Pods[ns.Name] = clusterPods
 
 	}
-	fmt.Printf("Constructed this cluster: %v\n", cluster)
 	emitter.EmitChanges(cluster, config.RemoteEndpoint)
 }
 
@@ -426,13 +425,13 @@ func UpdateObject(i interface{}, config config.Config) {
 		case "created":
 			for index, ns := range cluster.Namespaces {
 				if ns.Name == updateObj.Name {
-					fmt.Printf("Adding Namespace: %v\n", updateObj.Name)
+					// fmt.Printf("Adding Namespace: %v\n", updateObj.Name)
 					cluster.Namespaces[index] = updateObj
 					newObject = false
 				}
 			}
 			if newObject == true {
-				fmt.Printf("NS doesn't exist, adding it %v\n", updateObj.Name)
+				// fmt.Printf("NS doesn't exist, adding it %v\n", updateObj.Name)
 				cluster.Namespaces = append(cluster.Namespaces, updateObj)
 			}
 		case "deleted":
