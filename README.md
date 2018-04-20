@@ -8,7 +8,7 @@ Build a Quartermaster docker image and push it to your repository.
 docker build -t <your image name> . && \
 docker push <your image name> 
 ```  
-Update deplyment manifest, `examples/deploy.yaml`, file to use your image name. Also, update the ConfigMap section of the same file to meet your needs. See _Configuration_ section.  
+Update deployment manifest, `examples/deploy.yaml`, file to use your image name. Also, update the ConfigMap section of the same file to meet your needs. See _Configuration_ section.  
 
 **Deploy Quartermaster**  
 `kubectl apply -f examples/deploy.yaml`  
