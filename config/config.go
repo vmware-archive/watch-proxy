@@ -14,21 +14,37 @@ package config
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
-	"sort"
 	"time"
 
+	"github.com/golang/glog"
 	yaml "gopkg.in/yaml.v2"
 )
 
+type FieldPruner map[string][]string
+
 type Config struct {
-	RemoteEndpoint string   `yaml:"remoteEndpoint"`
-	ResourcesWatch []string `yaml:"resources"`
-	NewResources   []string
-	StaleResources []string
-	ClusterName    string `yaml:"clusterName"`
-	DeltaUpdates   bool   `yaml:"deltaUpdates"`
+	Endpoint          RemoteEndpoint `yaml:"remoteEndpoint"`
+	ResourcesWatch    []Resource     `yaml:"resources"`
+	NewResources      []Resource
+	StaleResources    []Resource
+	ClusterName       string `yaml:"clusterName"`
+	DeltaUpdates      bool   `yaml:"deltaUpdates"`
+	DelayStartSeconds string `yaml:"delayAddEventDuration"`
+	EmitCacheDuration string `yaml:"emitCacheDuration"`
+	ForceReuploadDuration string `yaml:"forceReuploadDuration"`
+}
+
+type Resource struct {
+	Name        string   `yaml:"name"`
+	AssetId     string   `yaml:"assetId"`
+	PruneFields []string `yaml:"pruneFields"`
+}
+
+type RemoteEndpoint struct {
+	Type   string `yaml:"type"`
+	Region string `yaml:"region"`
+	Url    string `yaml:"url"`
 }
 
 // ReadConfig reads info from a config file based on the passed configPath.
@@ -49,12 +65,13 @@ func ReadConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-func (c *Config) DiffConfig(old, new []string) {
-	sort.Strings(old)
-	sort.Strings(new)
+func (c *Config) DiffConfig(old, new []Resource) {
+	// TODO(joshrosso): need to determine sorting peice
+	// sort.Strings(old)
+	// sort.Strings(new)
 
-	keeps := []string{}
-	drops := []string{}
+	keeps := []Resource{}
+	drops := []Resource{}
 	// make a copy of the data that we can remove from
 	// while we iterate on the original
 	// the modified news var will be what we build our final list from
@@ -63,7 +80,7 @@ func (c *Config) DiffConfig(old, new []string) {
 	for _, oRes := range old {
 		match := false
 		for i, nRes := range new {
-			if oRes == nRes {
+			if oRes.Name == nRes.Name {
 				keeps = append(keeps, oRes)
 				news = append(news[:i], news[i+1:]...)
 				// if we found a match mark the value as match = true
@@ -97,7 +114,7 @@ func fileWatcher(changed chan bool, file string) {
 		for {
 			info, err := os.Stat(file)
 			if err != nil {
-				log.Println("Error accessing file", err)
+				glog.Errorf("error accessing file. error: ", err)
 			}
 
 			modTime := info.ModTime()

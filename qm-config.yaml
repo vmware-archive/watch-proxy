@@ -1,0 +1,35 @@
+clusterName: "heptio-test-cluster"
+# Minutes quatermaster should remember it previously emitted an object and that object's
+# state at the given time. Specified with seconds (s), minutes (m), or hours (h).
+emitCacheDuration: 14400m
+# Minutes quartermaster should wait before attempting to re-process all objects inside of kubernetes.
+# If state of object during re-upload hasn't changed since last emit (meaning quartermaster still has
+# a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value
+# to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
+forceReuploadDuration: 500h
+remoteEndpoint:
+  type: https
+  #region: us-east-2
+  url: http://localhost:8080/data
+resources:
+- name: replicasets
+  assetId: hey
+- name: deployments
+  assetId: deploy
+  pruneFields:
+  - metadata.resourceVersion
+  - metadata.generation
+  - status.observedGeneration
+#- name: pods
+#  assetId: pods
+#  pruneFields:
+#  - metadata.creationTimestamp
+#  - metadata.annotations
+#  - metadata.labels.k8s-app
+#- name: namespaces
+#  assetId: namespaces
+#  pruneFields:
+#  - metadata.creationTimestamp
+#  - metadata.annotations.alm-manager
+#  - metadata.resourceVersion
+#    #delayAddEventDuration: 30
