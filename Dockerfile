@@ -1,14 +1,12 @@
-FROM golang:1.9.2 AS build
-ARG GITHUB_TOKEN
+FROM golang:1.10.1 AS build
+
 COPY . /go/src/github.com/heptio/quartermaster
 
 WORKDIR /go/src/github.com/heptio/quartermaster
-RUN git config --global \
-url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/" && \
-    go get -d ./... && \
-    CGO_ENABLED=0 go build -a -ldflags '-s' -installsuffix cgo -o app .
+RUN CGO_ENABLED=0 go build -a -ldflags '-s' -installsuffix cgo -o quartermaster && \
+chmod +x quartermaster
 
 # copy the binary from the build stage to the final stage
-FROM alpine:3.6
-COPY --from=build /go/src/github.com/heptio/quartermaster/app /quartermaster
-CMD ["/quartermaster"]
+FROM alpine:3.7
+COPY --from=build /go/src/github.com/heptio/quartermaster/quartermaster /bin/quartermaster
+CMD ["quartermaster"]

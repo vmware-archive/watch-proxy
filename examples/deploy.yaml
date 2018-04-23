@@ -1,10 +1,14 @@
 
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: heptio-qm
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: system:serviceaccount:kube-system:quartermaster-controller
+  name: quartermaster-controller
 rules:
 - apiGroups:
   - "*"
@@ -18,15 +22,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: system:serviceaccount:kube-system:quartermaster-controller
+  name: quartermaster-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: system:serviceaccount:kube-system:quartermaster-controller
+  name: quartermaster-controller
 subjects:
 - kind: ServiceAccount
   name: quartermaster-controller
-  namespace: kube-system
+  namespace: heptio-qm
 
 ---
 apiVersion: v1
@@ -52,7 +56,8 @@ spec:
       serviceAccountName: quartermaster-controller
       containers:
       - name: quartermaster
-        image: quay.io/nicholas_lane/quartermaster:0.1.8
+        image: <your image name> # provide your own image
+        imagePullPolicy: Always
         resources:
             requests:
                 memory: "128Mi"
@@ -67,3 +72,17 @@ spec:
       - name: config-volume
         configMap:
           name: quartermaster
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: quartermaster
+data:
+  config.yaml: |-
+    clusterName: "ClusterNAME" # unique name for cluster quartermast is running in
+    remoteEndpoint: "<remote endpoint to receive updates>" # receiver of the quatermaster payloads
+    resources:
+      - namespaces
+      - pods
+      - deployments
+    deltaUpdates: true # true or false. False will send full cluster object. True sends just changes    
