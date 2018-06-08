@@ -13,8 +13,7 @@
 package kubecluster
 
 import (
-	"log"
-
+	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -29,26 +28,26 @@ func NewK8sClient(cPath string) (*kubernetes.Clientset, error) {
 	// unnecessary concern. Thus, we'll only call this when there is a kubeconfig explicitly
 	// passed.
 	if cPath != "" {
-		log.Printf("--kubeconfig flag specified, attempting to load kubeconfig from %s", cPath)
+		glog.Infof("--kubeconfig flag specified, attempting to load kubeconfig from %s", cPath)
 
 		config, err := clientcmd.BuildConfigFromFlags("", cPath)
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("client being created to communicate with API server at %s", config.Host)
+		glog.Infof("client being created to communicate with API server at %s", config.Host)
 
 		return kubernetes.NewForConfig(config)
 	}
 
 	// attempt to create client from in-cluster config (the service account associated witht the pod)
-	log.Println(`no --kubeconfig flag specified, loading Kubernetes service account assigned to pod 
+	glog.Infof(`no --kubeconfig flag specified, loading Kubernetes service account assigned to pod 
 		located at /var/run/secrets/kubernetes.io/serviceaccount/.`)
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("client being created to communicate with API server at %s", config.Host)
+	glog.Infof("client being created to communicate with API server at %s", config.Host)
 
 	return kubernetes.NewForConfig(config)
 }

@@ -14,10 +14,11 @@ package emitter
 
 import (
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/golang/glog"
 )
 
 func TestEmitChanges(t *testing.T) {
@@ -26,7 +27,7 @@ func TestEmitChanges(t *testing.T) {
 		if err != nil {
 			t.Errorf("Test HTTP Server had error reading body")
 		}
-		log.Printf("%s\n", string(contents))
+		glog.Infof("%s\n", string(contents))
 		if string(contents) != "\"{foo: bar, bar: baz}\"" {
 			t.Errorf("Request body is wrong, got: %v, want: %v.",
 				string(contents), "\"{foo: bar, bar: baz}\"")
