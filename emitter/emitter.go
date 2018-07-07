@@ -63,6 +63,8 @@ var (
 	emittedCache *cache.Cache
 	AssetIds     map[string]string
 	AssetIdLock  sync.RWMutex
+	username     string
+	password     string
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
@@ -79,6 +81,9 @@ func EmitChanges(newData []EmitObject) {
 	}
 
 	req, err := http.NewRequest("POST", httpUrl, bytes.NewBuffer(jsonBody))
+	if len(username) > 0 {
+		req.SetBasicAuth(username, password)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -159,9 +164,13 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 		go process()
 	case "http":
 		httpUrl = c.Endpoint.Url
+		username = c.Endpoint.Username
+		password = c.Endpoint.Password
 		go process()
 	case "https":
 		httpUrl = c.Endpoint.Url
+		username = c.Endpoint.Username
+		password = c.Endpoint.Password
 		go process()
 	default:
 		glog.Fatalf("endpoint type %s not supported", c.Endpoint.Type)

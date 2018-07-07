@@ -416,8 +416,9 @@
     "kubernetes/typed/storage/v1",
     "kubernetes/typed/storage/v1alpha1",
     "kubernetes/typed/storage/v1beta1",
-    "listers/apps/v1beta2",
+    "listers/apps/v1beta1",
     "listers/core/v1",
+    "listers/extensions/v1beta1",
     "pkg/version",
     "rest",
     "rest/watch",
@@ -450,6 +451,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "073aca77b6103ba6b4b14d3386cc02720218c21979cc24ef3834600a93b7e818"
+  inputs-digest = "5d391ac658a6def55246ef5ac1b47d1e73bccada68887001b3718cd3b1781239"
   solver-name = "gps-cdcl"
   solver-version = 1
