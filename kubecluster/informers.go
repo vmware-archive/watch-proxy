@@ -1,11 +1,15 @@
 package kubecluster
 
 import (
+//	"github.com/kubernetes/staging/src/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/heptio/quartermaster/kubecluster"
+
 	"github.com/golang/glog"
+	"github.com/heptio/quartermaster/config"
 	apps_v1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
@@ -18,7 +22,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"github.com/heptio/quartermaster/config"
+
+	crdClient "k8s.io/apiextensions-apiserver/examples/client-go/pkg/client/clientset/versioned/typed/cr/v1"
+	"k8s.io/apiextensions-apiserver/examples/client-go/pkg/apis/apiextensions"
 )
 
 const (
@@ -72,14 +78,16 @@ type InformerClients []*InformerClient
 //
 // * client: kubernetes.Clientset used for generating REST clients capable for communicating with
 //           kubernetes
+// * crdClient: CRD client used for generating REST clients capable of communicating with Kubernetes
+//			for the purposes of gathering CRD info.
 // * resource: the type of k8s object the informer will watch for events on. e.g. pods,
 //             deployments, or namespaces
 // * nsSelector: scopes the informer to only watch objects in a specific namespace. An empty string
 //               represents all namespaces.
 // * pQueue: processor queue where all events should be dropped for future processing.
-func NewInformerClient(client *kubernetes.Clientset, resource string, nsSelector string,
+func NewInformerClient(client *kubernetes.Clientset, crdClient *crdClient.Clientset, resource string, nsSelector string,
 	pQueue workqueue.RateLimitingInterface, config config.Config) (*InformerClient, error) {
-	r, obj, err := getRuntimeObjectConfig(client, resource)
+	r, obj, err := getRuntimeObjectConfig(client, crdClient, resource)
 	if err != nil {
 		return nil, err
 	}
@@ -87,14 +95,14 @@ func NewInformerClient(client *kubernetes.Clientset, resource string, nsSelector
 	delay, err := time.ParseDuration(config.DelayStartSeconds)
 	if err != nil {
 		delay = 0 * time.Second
-		glog.Warningf("%s: no valid delayAddEventDuration, quartermaster will process all events without delay. error: %s. " +
+		glog.Warningf("%s: no valid delayAddEventDuration, quartermaster will process all events without delay. error: %s. "+
 			"no delay will be applied.", resource, err.Error())
 	}
 
 	resyncDuration, err := time.ParseDuration(config.ForceReuploadDuration)
 	if err != nil {
 		resyncDuration = 0 * time.Second
-		glog.Warningf("%s: no valid forceReuploadDuration set, quartermaster will not attempt to periodically re-upload" +
+		glog.Warningf("%s: no valid forceReuploadDuration set, quartermaster will not attempt to periodically re-upload"+
 			" all kubernetes objects.", resource)
 	}
 
@@ -233,7 +241,7 @@ func RemoveInformerClient(ics InformerClients, removeIc *InformerClient) Informe
 
 // getRuntimeObjectConfig returns the appropriate rest client and runtime object type based on the
 // resource argument. the kubernetes.Clientset argument is used to construct the rest client.
-func getRuntimeObjectConfig(client *kubernetes.Clientset, resource string) (*rest.Interface,
+func getRuntimeObjectConfig(client *kubernetes.Clientset, crdClient *crdClient.Clientset, resource string) (*rest.Interface,
 	runtime.Object, error) {
 	var rest rest.Interface
 	var obj runtime.Object
@@ -266,6 +274,13 @@ func getRuntimeObjectConfig(client *kubernetes.Clientset, resource string) (*res
 	case "replicasets":
 		rest = client.ExtensionsV1beta1().RESTClient()
 		obj = &v1beta1.ReplicaSet{}
+	case "virtualservices":
+		crdClient := crdClient.RESTClient()
+		testobj := &apiextensions.CustumResourceDefinition
+		if testobj.Kind == "VirtualService" {
+			obj = testobj
+		}
+	}
 	default:
 		return nil, nil, fmt.Errorf("object type requested is not recognized. type: %s", resource)
 	}

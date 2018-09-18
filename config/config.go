@@ -28,11 +28,12 @@ type Config struct {
 	ResourcesWatch        []Resource     `yaml:"resources"`
 	NewResources          []Resource
 	StaleResources        []Resource
-	ClusterName           string `yaml:"clusterName"`
-	DeltaUpdates          bool   `yaml:"deltaUpdates"`
-	DelayStartSeconds     string `yaml:"delayAddEventDuration"`
-	EmitCacheDuration     string `yaml:"emitCacheDuration"`
-	ForceReuploadDuration string `yaml:"forceReuploadDuration"`
+	ClusterName           string            `yaml:"clusterName"`
+	DeltaUpdates          bool              `yaml:"deltaUpdates"`
+	DelayStartSeconds     string            `yaml:"delayAddEventDuration"`
+	EmitCacheDuration     string            `yaml:"emitCacheDuration"`
+	ForceReuploadDuration string            `yaml:"forceReuploadDuration"`
+	Metadata              map[string]string `yaml:"metadata"`
 }
 
 type Resource struct {
@@ -47,6 +48,7 @@ type RemoteEndpoint struct {
 	Url      string `yaml:"url"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
+	Receiver string `yaml:"receiver"`
 }
 
 // ReadConfig reads info from a config file based on the passed configPath.

@@ -26,6 +26,8 @@ import (
 	"github.com/heptio/quartermaster/config"
 	"github.com/heptio/quartermaster/inventory"
 
+	crdClient "k8s.io/apiextensions-apiserver/examples/client-go/pkg/client/clientset/versioned/typed/cr/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/workqueue"
@@ -42,7 +44,7 @@ var (
 // described in the config. It expects a kubernetes client for which rest clients will be derived,
 // the configuration of quartermaster, and a processing queue where all objects that triggered
 // events will be stored.
-func StartWatchers(client *kubernetes.Clientset, c config.Config,
+func StartWatchers(client *kubernetes.Clientset, crdClient *crdClient.Clientset, c config.Config,
 	processorQueue workqueue.RateLimitingInterface) InformerClients {
 	// loop through list of resources to watch and startup watchers
 	// for those resources.
@@ -60,7 +62,7 @@ func StartWatchers(client *kubernetes.Clientset, c config.Config,
 
 	// start the watchers
 	for _, resource := range resources {
-		ic, err := NewInformerClient(client, resource.Name, "", processorQueue, c)
+		ic, err := NewInformerClient(client, crdClient, resource.Name, "", processorQueue, c)
 		if err != nil {
 			glog.Errorf("failure to create client to listen for %s objects. They will not be "+
 				"watched", resource)

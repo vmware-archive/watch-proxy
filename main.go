@@ -30,6 +30,9 @@ func main() {
 		panic(err.Error())
 	}
 
+	//Create CRD Clientset based on KubeConfigPath passed above
+	crdClientset := kubecluster.NewCRDClient()
+
 	// create quartermaster configuration
 	parsedConfig, err := config.ReadConfig(configFile)
 	if err != nil {
@@ -46,7 +49,7 @@ func main() {
 	emitter.StartEmitter(qmConfig, make(chan emitter.EmitObject, 1000))
 
 	// start all k8s object watchers
-	ics := kubecluster.StartWatchers(clientset, qmConfig, processor.Queue)
+	ics := kubecluster.StartWatchers(clientset, crdClientset, qmConfig, processor.Queue)
 
 	// watch for changes to the config file and and adjust watchers if there are changes
 	fileChange := make(chan bool)

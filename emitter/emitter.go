@@ -53,6 +53,12 @@ type Wrapper struct {
 	EventType string                 `json:"event"`
 }
 
+type JsonEmit struct {
+	Receiver string
+	Data     []Wrapper
+	MetaData map[string]string
+}
+
 var (
 	svc          *sqs.SQS
 	sqsUrl       string
@@ -65,23 +71,39 @@ var (
 	AssetIdLock  sync.RWMutex
 	username     string
 	password     string
+	receiver     string
+	metadata     map[string]string
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
 func EmitChanges(newData []EmitObject) {
+	var jsonBody []byte
+	var err error
+
 	dataToEmit := []Wrapper{}
 	for _, data := range newData {
 		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload,
 			data.UID, data.EventType})
 	}
-	jsonBody, err := json.Marshal(dataToEmit)
+
+	emitData := JsonEmit{
+		Receiver: receiver,
+		Data:     dataToEmit,
+		MetaData: metadata,
+	}
+
+	glog.Infof("Emitting the following: %+v", emitData)
+
+	jsonBody, err = json.Marshal(emitData)
 	if err != nil {
 		glog.Errorf("failed to marshal to-be-emitted object. error: %s", err)
 		return
 	}
 
 	req, err := http.NewRequest("POST", httpUrl, bytes.NewBuffer(jsonBody))
+	glog.Infof("Setting username: %v", username)
 	if len(username) > 0 {
+		glog.Info("Setting HTTP Basic Auth")
 		req.SetBasicAuth(username, password)
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -166,11 +188,15 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 		httpUrl = c.Endpoint.Url
 		username = c.Endpoint.Username
 		password = c.Endpoint.Password
+		receiver = c.Endpoint.Receiver
+		metadata = c.Metadata
 		go process()
 	case "https":
 		httpUrl = c.Endpoint.Url
 		username = c.Endpoint.Username
 		password = c.Endpoint.Password
+		receiver = c.Endpoint.Receiver
+		metadata = c.Metadata
 		go process()
 	default:
 		glog.Fatalf("endpoint type %s not supported", c.Endpoint.Type)

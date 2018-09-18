@@ -37,52 +37,122 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: quartermaster-controller
+  namespace: heptio-qm
 
 ---
-apiVersion: apps/v1beta1
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
+  labels:
+    app: quartermaster
   name: quartermaster
+  namespace: heptio-qm
 spec:
+  progressDeadlineSeconds: 600
   replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: quartermaster
   strategy:
     rollingUpdate:
+      maxSurge: 25%
       maxUnavailable: 1
+    type: RollingUpdate
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: quartermaster
     spec:
-      serviceAccountName: quartermaster-controller
       containers:
-      - name: quartermaster
-        image: <your image name> # provide your own image
+      - image: docker-test.qa.walmart.com/test/quartermaster:basicauth 
         imagePullPolicy: Always
+        name: quartermaster
         resources:
-            requests:
-                memory: "128Mi"
-                cpu: "100m"
-            limits:
-                memory: "512Mi"
-                cpu: "150m"
+          limits:
+            cpu: 150m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
         volumeMounts:
-        - name: config-volume
-          mountPath: /etc/quartermaster
+        - mountPath: /etc/quartermaster
+          name: config-volume
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: quartermaster-controller
+      serviceAccountName: quartermaster-controller
+      terminationGracePeriodSeconds: 30
       volumes:
-      - name: config-volume
-        configMap:
+      - configMap:
+          defaultMode: 420
           name: quartermaster
+        name: config-volume
 ---
-kind: ConfigMap
 apiVersion: v1
-metadata:
-  name: quartermaster
 data:
   config.yaml: |-
-    clusterName: "ClusterNAME" # unique name for cluster quartermast is running in
-    remoteEndpoint: "<remote endpoint to receive updates>" # receiver of the quatermaster payloads
+    clusterName: "heptio-test-cluster"
+    # Minutes quatermaster should remember it previously emitted an object and that object's
+    # state at the given time. Specified with seconds (s), minutes (m), or hours (h).
+    emitCacheDuration: 14400m
+    # Minutes quartermaster should wait before attempting to re-process all objects inside of kubernetes.
+    # If state of object during re-upload hasn't changed since last emit (meaning quartermaster still has
+    # a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value
+    # to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
+    forceReuploadDuration: 500h
+    remoteEndpoint:
+      type: https
+      #region: us-east-2
+      url: http://concord.prod.walmart.com/api/v1/events/k8s-auto-ops
+      username: vn0a8pr
+      password: Walmart1
+      jsonType: single
+      receiver: k8s-test-qm
+    metadata:
+      site: test
+      profile: dev
+      cluster_id: 1234567890
+      clusters_seq: c1
     resources:
-      - namespaces
-      - pods
-      - deployments
-    deltaUpdates: true # true or false. False will send full cluster object. True sends just changes    
+    - name: deployments
+      assetId: deploy
+      pruneFields:
+      - metadata.resourceVersion
+      - metadata.generation
+      - status.observedGeneration
+    #- name: pods
+    #  assetId: pods
+    #  pruneFields:
+    #  - metadata.creationTimestamp
+    #  - metadata.annotations
+    #  - metadata.labels.k8s-app
+    - name: namespaces
+      assetId: namespaces
+      pruneFields:
+      - metadata.creationTimestamp
+      - metadata.annotations.alm-manager
+      - metadata.resourceVersion
+        #delayAddEventDuration: 30
+    - name: services
+      assetId: services
+      pruneFileds:
+      - metadata.creationTimestamp
+      - metadata.annotations.alm-manager
+      - metadata.resourceVersion
+    - name: ingresses
+      assetId: ingresses
+      pruneFileds:
+      - metadata.creationTimestamp
+      - metadata.annotations.alm-manager
+      - metadata.resourceVersion
+kind: ConfigMap
+metadata:
+  name: quartermaster
+  namespace: heptio-qm
+

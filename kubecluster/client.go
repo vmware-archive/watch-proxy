@@ -14,9 +14,15 @@ package kubecluster
 
 import (
 	"github.com/golang/glog"
+	crdClient "k8s.io/apiextensions-apiserver/examples/client-go/pkg/client/clientset/versioned/typed/cr/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+var (
+	config *rest.config
+	err    error
 )
 
 // NewK8SClient returns a kubernetes client based on a passed kubeconfig path. If a kubeconfig
@@ -30,7 +36,7 @@ func NewK8sClient(cPath string) (*kubernetes.Clientset, error) {
 	if cPath != "" {
 		glog.Infof("--kubeconfig flag specified, attempting to load kubeconfig from %s", cPath)
 
-		config, err := clientcmd.BuildConfigFromFlags("", cPath)
+		config, err = clientcmd.BuildConfigFromFlags("", cPath)
 		if err != nil {
 			return nil, err
 		}
@@ -43,11 +49,15 @@ func NewK8sClient(cPath string) (*kubernetes.Clientset, error) {
 	glog.Infof(`no --kubeconfig flag specified, loading Kubernetes service account assigned to pod 
 		located at /var/run/secrets/kubernetes.io/serviceaccount/.`)
 
-	config, err := rest.InClusterConfig()
+	config, err = rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
 	glog.Infof("client being created to communicate with API server at %s", config.Host)
 
 	return kubernetes.NewForConfig(config)
+}
+
+func NewCRDClient() *crdClient.Clientset {
+	return crdClient.NewForConfig(config)
 }

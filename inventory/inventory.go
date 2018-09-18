@@ -59,3 +59,11 @@ type Pod struct {
 	Event     string
 	Kind      string
 }
+
+type Service struct {
+	UID		  types.UID
+	Name      string
+	Namespace string
+	Labels	  map[string]string
+	 
+}
