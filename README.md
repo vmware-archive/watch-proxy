@@ -3,21 +3,23 @@
 Quartermaster watches the inventory of a Kubernetes cluster and publishes changes to receiver where an inventory is one or many Kubernetes resources you wish to track the state of.
 
 ## Install
-Build a Quartermaster docker image and push it to your repository.
-```
-docker build -t <your image name> . && \
-docker push <your image name> 
-```  
-Update deployment manifest, `examples/deploy.yaml`, file to use your image name. Also, update the ConfigMap section of the same file to meet your needs. See _Configuration_ section.  
 
-**Deploy Quartermaster**  
-`kubectl apply -f examples/deploy.yaml`  
-This will deploy Quartermaster and create 
-* A new namespace `heptio-qm`
-* ClusterRole
-* ClusterRoleBinding
-* A ServiceAccount for Quartermaster. 
+Build and push a docker image:
 
+    $ make server
+    $ docker build -t your/image/name .
+    $ docker push your/image/name
+
+Edit example manifests:
+
+    1. Add your image name to `examples/quartermaster-deploy.yaml`
+    2. Add the remoted endpoint for the receiver of the quartermaster payload to `examples/quartermaster-config.yaml`
+
+Deploy Quartermaster:
+
+    $ kubectl apply -f examples/quartermaster-rbac.yaml
+    $ kubectl apply -f examples/quartermaster-config.yaml
+    $ kubectl apply -f examples/quartermaster-deploy.yaml
 
 ## Configuration
 Configuration for Quartermaster is done via a config file, which, when deployed to kubernetes should take the form of a configmap. An example can be seen in the [examples](examples) dir. 
