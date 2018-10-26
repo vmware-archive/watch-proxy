@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: heptio-qm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: quartermaster-controller
+rules:
+- apiGroups:
+  - "*"
+  resources:
+  - "*"
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: quartermaster-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: quartermaster-controller
+subjects:
+- kind: ServiceAccount
+  name: quartermaster-controller
+  namespace: heptio-qm
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quartermaster-controller
+  namespace: heptio-qm
