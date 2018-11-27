@@ -458,7 +458,7 @@
   ]
   pruneopts = ""
   revision = "4972c8e335e32ab65ba45bde0a99c6544c8a8e4c"
-  version = "kubernetes-1.8.10"
+  version = "kubernetes-1.8.9"
 
 [[projects]]
   digest = "1:e0cde0b53f1a353cc5fe6d86e9d41a41280b6395ab11d6c4f8f2f82593154ed6"
@@ -546,7 +546,6 @@
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1beta1",
     "k8s.io/api/core/v1",
-    "k8s.io/api/extensions/v1beta1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/conversion",
