@@ -6,6 +6,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/heptio/quartermaster/config"
+	istio_v1alpha3 "github.com/heptio/quartermaster/custom/apis/virtualservice/v1alpha3"
+	vs_client "github.com/heptio/quartermaster/custom/client/clientset/versioned"
+	lister_istio_v1alpha3 "github.com/heptio/quartermaster/custom/client/listers/virtualservice/v1alpha3"
 	apps_v1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
@@ -18,7 +22,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"github.com/heptio/quartermaster/config"
 )
 
 const (
@@ -38,6 +41,7 @@ var (
 	DeployLister lister_apps_v1beta1.DeploymentLister
 	RsLister     lister_v1beta1.ReplicaSetLister
 	IngLister    lister_v1beta1.IngressLister
+	VsLister     lister_istio_v1alpha3.VirtualServiceLister
 )
 
 // Informer is capable of starting and stopping an running informer.
@@ -77,9 +81,10 @@ type InformerClients []*InformerClient
 // * nsSelector: scopes the informer to only watch objects in a specific namespace. An empty string
 //               represents all namespaces.
 // * pQueue: processor queue where all events should be dropped for future processing.
-func NewInformerClient(client *kubernetes.Clientset, resource string, nsSelector string,
+func NewInformerClient(client *kubernetes.Clientset, vsClient *vs_client.Clientset, resource string, nsSelector string,
 	pQueue workqueue.RateLimitingInterface, config config.Config) (*InformerClient, error) {
-	r, obj, err := getRuntimeObjectConfig(client, resource)
+	r, obj, err := getRuntimeObjectConfig(client, vsClient, resource)
+
 	if err != nil {
 		return nil, err
 	}
@@ -87,14 +92,14 @@ func NewInformerClient(client *kubernetes.Clientset, resource string, nsSelector
 	delay, err := time.ParseDuration(config.DelayStartSeconds)
 	if err != nil {
 		delay = 0 * time.Second
-		glog.Warningf("%s: no valid delayAddEventDuration, quartermaster will process all events without delay. error: %s. " +
+		glog.Warningf("%s: no valid delayAddEventDuration, quartermaster will process all events without delay. error: %s. "+
 			"no delay will be applied.", resource, err.Error())
 	}
 
 	resyncDuration, err := time.ParseDuration(config.ForceReuploadDuration)
 	if err != nil {
 		resyncDuration = 0 * time.Second
-		glog.Warningf("%s: no valid forceReuploadDuration set, quartermaster will not attempt to periodically re-upload" +
+		glog.Warningf("%s: no valid forceReuploadDuration set, quartermaster will not attempt to periodically re-upload"+
 			" all kubernetes objects.", resource)
 	}
 
@@ -233,8 +238,9 @@ func RemoveInformerClient(ics InformerClients, removeIc *InformerClient) Informe
 
 // getRuntimeObjectConfig returns the appropriate rest client and runtime object type based on the
 // resource argument. the kubernetes.Clientset argument is used to construct the rest client.
-func getRuntimeObjectConfig(client *kubernetes.Clientset, resource string) (*rest.Interface,
-	runtime.Object, error) {
+func getRuntimeObjectConfig(client *kubernetes.Clientset, vsClient *vs_client.Clientset,
+	resource string) (*rest.Interface, runtime.Object, error) {
+
 	var rest rest.Interface
 	var obj runtime.Object
 
@@ -266,6 +272,9 @@ func getRuntimeObjectConfig(client *kubernetes.Clientset, resource string) (*res
 	case "replicasets":
 		rest = client.ExtensionsV1beta1().RESTClient()
 		obj = &v1beta1.ReplicaSet{}
+	case "virtualservices":
+		rest = vsClient.VirtualserviceV1alpha3().RESTClient()
+		obj = &istio_v1alpha3.VirtualService{}
 	default:
 		return nil, nil, fmt.Errorf("object type requested is not recognized. type: %s", resource)
 	}
@@ -298,6 +307,8 @@ func initLister(i cache.Indexer, objType interface{}) error {
 		DeployLister = lister_apps_v1beta1.NewDeploymentLister(i)
 	case *v1beta1.ReplicaSet:
 		RsLister = lister_v1beta1.NewReplicaSetLister(i)
+	case *istio_v1alpha3.VirtualService:
+		VsLister = lister_istio_v1alpha3.NewVirtualServiceLister(i)
 	default:
 		return fmt.Errorf("Failed to init lister due to inability to infer type. Type was %s",
 			t)

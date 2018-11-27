@@ -1,6 +1,6 @@
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.8.9"
+  version = "kubernetes-1.8.10"
 
 [[constraint]]
   name = "k8s.io/client-go"
@@ -13,3 +13,4 @@
 [[constraint]]
   name = "github.com/patrickmn/go-cache"
   version = "2.1.0"
+
