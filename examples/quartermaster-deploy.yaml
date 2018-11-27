@@ -1,0 +1,35 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: quartermaster
+  namespace: heptio-qm
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: quartermaster
+    spec:
+      serviceAccountName: quartermaster-controller
+      containers:
+      - name: quartermaster
+        image: your/image/name  # put your image name here
+        imagePullPolicy: Always
+        resources:
+            requests:
+                memory: "128Mi"
+                cpu: "100m"
+            limits:
+                memory: "512Mi"
+                cpu: "150m"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/quartermaster
+      volumes:
+      - name: config-volume
+        configMap:
+          name: quartermaster
+

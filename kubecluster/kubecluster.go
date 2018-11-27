@@ -1,15 +1,3 @@
-// Copyright 2018 Heptio
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 package kubecluster
 
 import (
@@ -24,6 +12,7 @@ import (
 	"github.com/pborman/uuid"
 
 	"github.com/heptio/quartermaster/config"
+	vs_clientset "github.com/heptio/quartermaster/custom/client/clientset/versioned"
 	"github.com/heptio/quartermaster/inventory"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +31,7 @@ var (
 // described in the config. It expects a kubernetes client for which rest clients will be derived,
 // the configuration of quartermaster, and a processing queue where all objects that triggered
 // events will be stored.
-func StartWatchers(client *kubernetes.Clientset, c config.Config,
+func StartWatchers(client *kubernetes.Clientset, vsClient *vs_clientset.Clientset, c config.Config,
 	processorQueue workqueue.RateLimitingInterface) InformerClients {
 	// loop through list of resources to watch and startup watchers
 	// for those resources.
@@ -60,7 +49,8 @@ func StartWatchers(client *kubernetes.Clientset, c config.Config,
 
 	// start the watchers
 	for _, resource := range resources {
-		ic, err := NewInformerClient(client, resource.Name, "", processorQueue, c)
+		ic, err := NewInformerClient(client, vsClient, resource.Name, "", processorQueue, c)
+
 		if err != nil {
 			glog.Errorf("failure to create client to listen for %s objects. They will not be "+
 				"watched", resource)
