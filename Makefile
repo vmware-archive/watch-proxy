@@ -28,4 +28,9 @@ container: server
 push: container
 	docker push $(PREFIX):$(TAG)
 
+clean:
+	rm server
+
+release: push clean
+
 .PHONY: all deps test image
