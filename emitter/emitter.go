@@ -53,14 +53,18 @@ var (
 	AssetIdLock  sync.RWMutex
 	username     string
 	password     string
+	metadata     map[string]interface{}
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
 func EmitChanges(newData []EmitObject) {
 	dataToEmit := []Wrapper{}
 	for _, data := range newData {
-		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload,
-			data.UID, data.EventType})
+		if len(metadata) > 0 {
+			dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), metadata, data.Payload, data.UID, data.EventType})
+		} else {
+			dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload, data.UID, data.EventType})
+		}
 	}
 	jsonBody, err := json.Marshal(dataToEmit)
 	if err != nil {
@@ -148,6 +152,7 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 	emitType = c.Endpoint.Type
 	client = http.Client{Timeout: time.Second * 5}
 	EmitQueue = q
+	metadata = c.Metadata
 
 	switch c.Endpoint.Type {
 	case "sqs":
