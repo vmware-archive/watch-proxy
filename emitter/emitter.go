@@ -36,6 +36,7 @@ type EmitObject struct {
 
 type Wrapper struct {
 	AssetID   string                 `json:"asset_type_id"`
+	Metadata  map[string]interface{} `json:"metadata"`
 	Data      map[string]interface{} `json:"data"`
 	UID       string                 `json:"uniqueId"`
 	EventType string                 `json:"event"`
@@ -60,11 +61,7 @@ var (
 func EmitChanges(newData []EmitObject) {
 	dataToEmit := []Wrapper{}
 	for _, data := range newData {
-		if len(metadata) > 0 {
-			dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), metadata, data.Payload, data.UID, data.EventType})
-		} else {
-			dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload, data.UID, data.EventType})
-		}
+		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), metadata, data.Payload, data.UID, data.EventType})
 	}
 	jsonBody, err := json.Marshal(dataToEmit)
 	if err != nil {
