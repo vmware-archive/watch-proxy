@@ -12,15 +12,16 @@ import (
 type FieldPruner map[string][]string
 
 type Config struct {
-	Endpoint          RemoteEndpoint `yaml:"remoteEndpoint"`
-	ResourcesWatch    []Resource     `yaml:"resources"`
-	NewResources      []Resource
-	StaleResources    []Resource
-	ClusterName       string `yaml:"clusterName"`
-	DeltaUpdates      bool   `yaml:"deltaUpdates"`
-	DelayStartSeconds string `yaml:"delayAddEventDuration"`
-	EmitCacheDuration string `yaml:"emitCacheDuration"`
-	ForceReuploadDuration string `yaml:"forceReuploadDuration"`
+	Endpoint              RemoteEndpoint `yaml:"remoteEndpoint"`
+	ResourcesWatch        []Resource     `yaml:"resources"`
+	NewResources          []Resource
+	StaleResources        []Resource
+	ClusterName           string                 `yaml:"clusterName"`
+	DeltaUpdates          bool                   `yaml:"deltaUpdates"`
+	DelayStartSeconds     string                 `yaml:"delayAddEventDuration"`
+	EmitCacheDuration     string                 `yaml:"emitCacheDuration"`
+	ForceReuploadDuration string                 `yaml:"forceReuploadDuration"`
+	Metadata              map[string]interface{} `yaml:"metadata"`
 }
 
 type Resource struct {
