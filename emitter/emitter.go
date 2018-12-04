@@ -1,3 +1,17 @@
+// Copyright 2018 Heptio
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package emitter
 
 import (
@@ -6,9 +20,11 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -91,6 +107,15 @@ func EmitChanges(newData []EmitObject) {
 	}
 	defer resp.Body.Close()
 
+	glog.Infof("response status code from remote endpoint: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			glog.Error("failed to read response body from remote endpoint: %s", err)
+		}
+		glog.Infof("response body from remote endpoint: %s", string(bodyBytes))
+	}
+
 	// record all successfully emitted objects
 	for _, entry := range newData {
 		recordEmitted(entry)
@@ -164,14 +189,13 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 		go process()
 	case "http":
 		httpUrl = c.Endpoint.Url
-		username = os.Getenv("USERNAME")
-		password = os.Getenv("PASSWORD")
+		username = strings.TrimSuffix(os.Getenv("USERNAME"), "\n")
+		password = strings.TrimSuffix(os.Getenv("PASSWORD"), "\n")
 		go process()
 	case "https":
 		httpUrl = c.Endpoint.Url
-		httpUrl = c.Endpoint.Url
-		username = os.Getenv("USERNAME")
-		password = os.Getenv("PASSWORD")
+		username = strings.TrimSuffix(os.Getenv("USERNAME"), "\n")
+		password = strings.TrimSuffix(os.Getenv("PASSWORD"), "\n")
 		go process()
 	default:
 		glog.Fatalf("endpoint type %s not supported", c.Endpoint.Type)
