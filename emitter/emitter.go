@@ -42,6 +42,10 @@ type Wrapper struct {
 	EventType string                 `json:"event"`
 }
 
+type PayloadRoot struct {
+	Data []Wrapper `json:"data"`
+}
+
 var (
 	svc          *sqs.SQS
 	sqsUrl       string
@@ -63,7 +67,10 @@ func EmitChanges(newData []EmitObject) {
 	for _, data := range newData {
 		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), metadata, data.Payload, data.UID, data.EventType})
 	}
-	jsonBody, err := json.Marshal(dataToEmit)
+
+	payloadRoot := &PayloadRoot{Data: dataToEmit}
+	jsonBody, err := json.Marshal(payloadRoot)
+
 	if err != nil {
 		glog.Errorf("failed to marshal to-be-emitted object. error: %s", err)
 		return
