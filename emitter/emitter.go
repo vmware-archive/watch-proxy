@@ -52,14 +52,14 @@ type EmitObject struct {
 
 type Wrapper struct {
 	AssetID   string                 `json:"asset_type_id"`
-	Metadata  map[string]interface{} `json:"metadata"`
 	Data      map[string]interface{} `json:"data"`
 	UID       string                 `json:"uniqueId"`
 	EventType string                 `json:"event"`
 }
 
 type PayloadRoot struct {
-	Data []Wrapper `json:"data"`
+	Data     []Wrapper              `json:"data"`
+	Metadata map[string]interface{} `json:"meta"`
 }
 
 var (
@@ -81,10 +81,10 @@ var (
 func EmitChanges(newData []EmitObject) {
 	dataToEmit := []Wrapper{}
 	for _, data := range newData {
-		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), metadata, data.Payload, data.UID, data.EventType})
+		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload, data.UID, data.EventType})
 	}
 
-	payloadRoot := &PayloadRoot{Data: dataToEmit}
+	payloadRoot := &PayloadRoot{Data: dataToEmit, Metadata: metadata}
 	jsonBody, err := json.Marshal(payloadRoot)
 
 	if err != nil {
