@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -83,6 +84,15 @@ func EmitChanges(newData []EmitObject) {
 		return
 	}
 	defer resp.Body.Close()
+
+	glog.Infof("response status code from remote endpoint: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			glog.Error("failed to read response body from remote endpoint: %s", err)
+		}
+		glog.Infof("response body from remote endpoint: %s", string(bodyBytes))
+	}
 
 	// record all successfully emitted objects
 	for _, entry := range newData {
