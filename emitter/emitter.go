@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -157,14 +158,13 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 		go process()
 	case "http":
 		httpUrl = c.Endpoint.Url
-		username = os.Getenv("USERNAME")
-		password = os.Getenv("PASSWORD")
+		username = strings.TrimSuffix(os.Getenv("USERNAME"), "\n")
+		password = strings.TrimSuffix(os.Getenv("PASSWORD"), "\n")
 		go process()
 	case "https":
 		httpUrl = c.Endpoint.Url
-		httpUrl = c.Endpoint.Url
-		username = os.Getenv("USERNAME")
-		password = os.Getenv("PASSWORD")
+		username = strings.TrimSuffix(os.Getenv("USERNAME"), "\n")
+		password = strings.TrimSuffix(os.Getenv("PASSWORD"), "\n")
 		go process()
 	default:
 		glog.Fatalf("endpoint type %s not supported", c.Endpoint.Type)
