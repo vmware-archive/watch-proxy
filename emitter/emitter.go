@@ -1,3 +1,17 @@
+// Copyright 2018 Heptio
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package emitter
 
 import (
@@ -6,9 +20,11 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +62,7 @@ type Emission struct {
 
 type Wrapper struct {
 	AssetID   string                 `json:"asset_type_id"`
+	Metadata  map[string]interface{} `json:"metadata"`
 	Data      map[string]interface{} `json:"data"`
 	UID       string                 `json:"uniqueId"`
 	EventType string                 `json:"event"`
@@ -56,14 +73,14 @@ var (
 	emittedCache *cache.Cache
 	AssetIds     map[string]string
 	AssetIdLock  sync.RWMutex
+	metadata     map[string]interface{}
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
 func EmitChanges(newData []EmitObject, emission Emission) {
 	dataToEmit := []Wrapper{}
 	for _, data := range newData {
-		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload,
-			data.UID, data.EventType})
+		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), metadata, data.Payload, data.UID, data.EventType})
 	}
 	jsonBody, err := json.Marshal(dataToEmit)
 	if err != nil {
@@ -85,6 +102,15 @@ func EmitChanges(newData []EmitObject, emission Emission) {
 		return
 	}
 	defer resp.Body.Close()
+
+	glog.Infof("response status code from remote endpoint: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			glog.Error("failed to read response body from remote endpoint: %s", err)
+		}
+		glog.Infof("response body from remote endpoint: %s", string(bodyBytes))
+	}
 
 	// record all successfully emitted objects
 	for _, entry := range newData {
@@ -151,6 +177,7 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 	loadCache(c)
 	SetAssetIds(c.ResourcesWatch)
 	EmitQueue = q
+	metadata = c.Metadata
 
 	for _, endpoint := range c.Endpoints {
 		emission := Emission{}
