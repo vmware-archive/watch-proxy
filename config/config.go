@@ -26,16 +26,15 @@ import (
 type FieldPruner map[string][]string
 
 type Config struct {
-	Endpoint              RemoteEndpoint `yaml:"remoteEndpoint"`
-	ResourcesWatch        []Resource     `yaml:"resources"`
+	Endpoints             []RemoteEndpoint `yaml:"remoteEndpoints"`
+	ResourcesWatch        []Resource       `yaml:"resources"`
 	NewResources          []Resource
 	StaleResources        []Resource
-	ClusterName           string                 `yaml:"clusterName"`
-	DeltaUpdates          bool                   `yaml:"deltaUpdates"`
-	DelayStartSeconds     string                 `yaml:"delayAddEventDuration"`
-	EmitCacheDuration     string                 `yaml:"emitCacheDuration"`
-	ForceReuploadDuration string                 `yaml:"forceReuploadDuration"`
-	Metadata              map[string]interface{} `yaml:"metadata"`
+	ClusterName           string `yaml:"clusterName"`
+	DeltaUpdates          bool   `yaml:"deltaUpdates"`
+	DelayStartSeconds     string `yaml:"delayAddEventDuration"`
+	EmitCacheDuration     string `yaml:"emitCacheDuration"`
+	ForceReuploadDuration string `yaml:"forceReuploadDuration"`
 }
 
 type Resource struct {
@@ -45,9 +44,11 @@ type Resource struct {
 }
 
 type RemoteEndpoint struct {
-	Type   string `yaml:"type"`
-	Region string `yaml:"region"`
-	Url    string `yaml:"url"`
+	Type        string `yaml:"type"`
+	Region      string `yaml:"region"`
+	Url         string `yaml:"url"`
+	UsernameVar string `yaml:"usernameVar"`
+	PasswordVar string `yaml:"passwordVar"`
 }
 
 // ReadConfig reads info from a config file based on the passed configPath.

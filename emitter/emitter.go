@@ -50,6 +50,16 @@ type EmitObject struct {
 	EventType string
 }
 
+type Emission struct {
+	Svc      *sqs.SQS
+	SqsUrl   string
+	HttpUrl  string
+	EmitType string
+	Client   http.Client
+	Username string
+	Password string
+}
+
 type Wrapper struct {
 	AssetID   string                 `json:"asset_type_id"`
 	Data      map[string]interface{} `json:"data"`
@@ -63,22 +73,15 @@ type PayloadRoot struct {
 }
 
 var (
-	svc          *sqs.SQS
-	sqsUrl       string
-	httpUrl      string
-	emitType     string
-	client       http.Client
 	EmitQueue    chan EmitObject
 	emittedCache *cache.Cache
 	AssetIds     map[string]string
 	AssetIdLock  sync.RWMutex
-	username     string
-	password     string
 	metadata     map[string]interface{}
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
-func EmitChanges(newData []EmitObject) {
+func EmitChanges(newData []EmitObject, emission Emission) {
 	dataToEmit := []Wrapper{}
 	for _, data := range newData {
 		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload, data.UID, data.EventType})
@@ -92,15 +95,15 @@ func EmitChanges(newData []EmitObject) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", httpUrl, bytes.NewBuffer(jsonBody))
-	if len(username) > 0 {
-		req.SetBasicAuth(username, password)
-		glog.Infof("using username %s to authenticate", username)
+	req, err := http.NewRequest("POST", emission.HttpUrl, bytes.NewBuffer(jsonBody))
+	if len(emission.Username) > 0 {
+		req.SetBasicAuth(emission.Username, emission.Password)
+		glog.Infof("using username %s to authenticate", emission.Username)
 	} else {
-		glog.Infof("no username detected: %s", username)
+		glog.Infof("no username detected: %s", emission.Username)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
+	resp, err := emission.Client.Do(req)
 	if err != nil {
 		glog.Errorf("failed to send http(s) request. error: %s", err)
 		return
@@ -124,7 +127,7 @@ func EmitChanges(newData []EmitObject) {
 }
 
 // EmitChangesSQS sends batches of records to SQS at between 1 to 10 at a time.
-func EmitChangesSQS(newData []EmitObject) error {
+func EmitChangesSQS(newData []EmitObject, emission Emission) error {
 	// send up to 10 records
 	entries := []*sqs.SendMessageBatchRequestEntry{}
 
@@ -155,8 +158,8 @@ func EmitChangesSQS(newData []EmitObject) error {
 	}
 
 	// send batch of message to sqs
-	result, err := svc.SendMessageBatch(&sqs.SendMessageBatchInput{
-		QueueUrl: aws.String(sqsUrl),
+	result, err := emission.Svc.SendMessageBatch(&sqs.SendMessageBatchInput{
+		QueueUrl: aws.String(emission.SqsUrl),
 		Entries:  entries,
 	})
 	if err != nil {
@@ -176,58 +179,65 @@ func EmitChangesSQS(newData []EmitObject) error {
 // initialize an SQS client used for publishing records to remote queues. It is responsible for
 // polling the emit queue and sending records up to AWS.
 func StartEmitter(c config.Config, q chan EmitObject) {
+	emissions := []Emission{}
+
 	loadCache(c)
 	SetAssetIds(c.ResourcesWatch)
-	emitType = c.Endpoint.Type
-	client = http.Client{Timeout: time.Second * 5}
 	EmitQueue = q
 	metadata = c.Metadata
 
-	switch c.Endpoint.Type {
-	case "sqs":
-		createAWSClient(c)
-		go process()
-	case "http":
-		httpUrl = c.Endpoint.Url
-		username = strings.TrimSuffix(os.Getenv("USERNAME"), "\n")
-		password = strings.TrimSuffix(os.Getenv("PASSWORD"), "\n")
-		go process()
-	case "https":
-		httpUrl = c.Endpoint.Url
-		username = strings.TrimSuffix(os.Getenv("USERNAME"), "\n")
-		password = strings.TrimSuffix(os.Getenv("PASSWORD"), "\n")
-		go process()
-	default:
-		glog.Fatalf("endpoint type %s not supported", c.Endpoint.Type)
-	}
+	for _, endpoint := range c.Endpoints {
+		emission := Emission{}
+		emission.EmitType = endpoint.Type
+		emission.Client = http.Client{Timeout: time.Second * 5}
 
+		switch endpoint.Type {
+		case "sqs":
+			emission.Svc = createAWSClient(endpoint)
+			emission.SqsUrl = endpoint.Url
+		case "http":
+			emission.HttpUrl = endpoint.Url
+			emission.Username = os.Getenv(endpoint.UsernameVar)
+			emission.Password = os.Getenv(endpoint.PasswordVar)
+		case "https":
+			emission.HttpUrl = endpoint.Url
+			emission.Username = os.Getenv(endpoint.UsernameVar)
+			emission.Password = os.Getenv(endpoint.PasswordVar)
+		default:
+			glog.Fatalf("endpoint type %s not supported", endpoint.Type)
+		}
+
+		emissions = append(emissions, emission)
+
+		glog.Infof("starting emitter for sending to %s", endpoint.Type)
+	}
+	go process(emissions)
 	go persistCacheTimer()
-	glog.Infof("emitter started for sending to %s", c.Endpoint.Type)
 }
 
 // createAWSClient sets the global AWS client used for sending record to SQS.
-func createAWSClient(c config.Config) {
+func createAWSClient(endpoint config.RemoteEndpoint) *sqs.SQS {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(c.Endpoint.Region)},
+		Region: aws.String(endpoint.Region)},
 	)
 	if err != nil {
 		panic(err.Error())
 	}
-	sqsUrl = c.Endpoint.Url
-	svc = sqs.New(sess)
+
+	return sqs.New(sess)
 }
 
-func process() {
+func process(emissions []Emission) {
 	for {
 		time.Sleep(processWaitTime)
-		emitWhenReady()
+		emitWhenReady(emissions)
 	}
 }
 
 // emitWhenReady checks whether there are 10 or more items ready to be emitter or if emitting
 // hasn't occured since the last upper period of time. If either condition is true, a batch is
 // sent to be emitted.
-func emitWhenReady() {
+func emitWhenReady(emissions []Emission) {
 	if len(EmitQueue) < 1 {
 		glog.Infof("no objects to emit")
 		return
@@ -247,12 +257,16 @@ func emitWhenReady() {
 		}
 	}
 
-	if emitType == "sqs" {
-		EmitChangesSQS(emittableList)
-		return
-	}
+	for _, emission := range emissions {
 
-	EmitChanges(emittableList)
+		if emission.EmitType == "sqs" {
+			EmitChangesSQS(emittableList, emission)
+			return
+		}
+
+		EmitChanges(emittableList, emission)
+
+	}
 }
 
 // recordEmitted stores a hash of an object fed to it. Stored hashes are eventually looked up
