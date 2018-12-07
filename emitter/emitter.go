@@ -19,6 +19,7 @@ import (
 	"crypto/sha1"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -51,13 +52,15 @@ type EmitObject struct {
 }
 
 type Emission struct {
-	Svc      *sqs.SQS
-	SqsUrl   string
-	HttpUrl  string
-	EmitType string
-	Client   http.Client
-	Username string
-	Password string
+	Svc           *sqs.SQS
+	SqsUrl        string
+	HttpUrl       string
+	EmitType      string
+	Client        http.Client
+	Username      string
+	Password      string
+	Namespaces    []string
+	EmittableList []EmitObject
 }
 
 type Wrapper struct {
@@ -81,9 +84,9 @@ var (
 )
 
 // EmitChanges sends a json payload of cluster changes to a remote endpoint
-func EmitChanges(newData []EmitObject, emission Emission) {
+func EmitChanges(emission Emission) {
 	dataToEmit := []Wrapper{}
-	for _, data := range newData {
+	for _, data := range emission.EmittableList {
 		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload, data.UID, data.EventType})
 	}
 
@@ -120,20 +123,20 @@ func EmitChanges(newData []EmitObject, emission Emission) {
 	}
 
 	// record all successfully emitted objects
-	for _, entry := range newData {
+	for _, entry := range emission.EmittableList {
 		recordEmitted(entry)
 		glog.Infof("[%s]: emitted.", entry.Key)
 	}
 }
 
 // EmitChangesSQS sends batches of records to SQS at between 1 to 10 at a time.
-func EmitChangesSQS(newData []EmitObject, emission Emission) error {
+func EmitChangesSQS(emission Emission) error {
 	// send up to 10 records
 	entries := []*sqs.SendMessageBatchRequestEntry{}
 
 	// construct an sqs BatchRequestEntry for every object to be sent
 	// serialize the data into JSON and provide metadata around the object type and cluster
-	for i, data := range newData {
+	for i, data := range emission.EmittableList {
 		j, _ := json.Marshal(data.Payload)
 		entry := &sqs.SendMessageBatchRequestEntry{
 			Id:           aws.String(strconv.Itoa(i)),
@@ -168,7 +171,7 @@ func EmitChangesSQS(newData []EmitObject, emission Emission) error {
 	}
 
 	// record all successfully emited objects
-	for _, entry := range newData {
+	for _, entry := range emission.EmittableList {
 		recordEmitted(entry)
 	}
 	glog.Infof("Object: sent to sqs: %s", result.String())
@@ -190,6 +193,7 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 		emission := Emission{}
 		emission.EmitType = endpoint.Type
 		emission.Client = http.Client{Timeout: time.Second * 5}
+		emission.Namespaces = endpoint.Namespaces
 
 		switch endpoint.Type {
 		case "sqs":
@@ -197,12 +201,12 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 			emission.SqsUrl = endpoint.Url
 		case "http":
 			emission.HttpUrl = endpoint.Url
-			emission.Username = os.Getenv(endpoint.UsernameVar)
-			emission.Password = os.Getenv(endpoint.PasswordVar)
+			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
+			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
 		case "https":
 			emission.HttpUrl = endpoint.Url
-			emission.Username = os.Getenv(endpoint.UsernameVar)
-			emission.Password = os.Getenv(endpoint.PasswordVar)
+			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
+			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
 		default:
 			glog.Fatalf("endpoint type %s not supported", endpoint.Type)
 		}
@@ -242,30 +246,46 @@ func emitWhenReady(emissions []Emission) {
 		glog.Infof("no objects to emit")
 		return
 	}
-	emittableList := []EmitObject{}
+
 	if len(EmitQueue) >= 10 {
 		glog.Infof("emitting batch of 10 objects")
 		for i := 0; i < 10; i++ {
 			o := <-EmitQueue
-			emittableList = append(emittableList, o)
+			for ei, emission := range emissions {
+				emit, err := filterByNamespace(emission.Namespaces, o)
+				if err != nil {
+					glog.Errorf("failed to filter by namespace. error: %s", err)
+				}
+
+				if emit == true {
+					emissions[ei].EmittableList = append(emission.EmittableList, o)
+				}
+			}
 		}
 	} else {
 		glog.Infof("emitting batch of objects")
 		for len(EmitQueue) > 0 {
 			o := <-EmitQueue
-			emittableList = append(emittableList, o)
+			for ei, emission := range emissions {
+				emit, err := filterByNamespace(emission.Namespaces, o)
+				if err != nil {
+					glog.Errorf("failed to filter by namespace. error: %s", err)
+				}
+
+				if emit == true {
+					emissions[ei].EmittableList = append(emission.EmittableList, o)
+				}
+			}
 		}
 	}
 
 	for _, emission := range emissions {
-
 		if emission.EmitType == "sqs" {
-			EmitChangesSQS(emittableList, emission)
+			EmitChangesSQS(emission)
 			return
 		}
 
-		EmitChanges(emittableList, emission)
-
+		EmitChanges(emission)
 	}
 }
 
@@ -377,4 +397,31 @@ func SetAssetIds(resources []config.Resource) {
 	AssetIds = newResourceMap
 	AssetIdLock.Unlock()
 	glog.Infof("assetIds loaded as: %s", AssetIds)
+}
+
+// filterByNamespace examines a remoteEndpoint's configured namespaces and the namespace
+// of the object to be emitted and determines if the remoteEndpoint should get
+// the object update sent to it
+func filterByNamespace(namespaces []string, o EmitObject) (bool, error) {
+	// by default if a remote endpoint has no namespaces defined, it will get all
+	if len(namespaces) == 0 {
+		return true, nil
+	}
+
+	metadata := o.Payload["metadata"].(map[string]interface{})
+	selfLink := metadata["selfLink"].(string)
+	objectNamespace := strings.Split(selfLink, "/")[4]
+
+	if objectNamespace == "" {
+		err := errors.New("unable to extract namespace from object's selflink value")
+		return false, err
+	}
+
+	for _, n := range namespaces {
+		if n == objectNamespace {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
