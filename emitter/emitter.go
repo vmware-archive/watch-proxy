@@ -203,10 +203,6 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 			emission.HttpUrl = endpoint.Url
 			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
 			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
-		case "https":
-			emission.HttpUrl = endpoint.Url
-			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
-			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
 		default:
 			glog.Fatalf("endpoint type %s not supported", endpoint.Type)
 		}
