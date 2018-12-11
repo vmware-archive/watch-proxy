@@ -17,7 +17,7 @@ spec:
       containers:
       - name: quartermaster
         image: your/image/name  # put your image name here
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         resources:
             requests:
                 memory: "128Mi"
@@ -28,6 +28,27 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/quartermaster
+        env:
+        - name: USERNAME1
+          valueFrom:
+            secretKeyRef:
+              name: quartermaster-creds-1
+              key: username
+        - name: PASSWORD1
+          valueFrom:
+            secretKeyRef:
+              name: quartermaster-creds-1
+              key: password
+        - name: USERNAME2
+          valueFrom:
+            secretKeyRef:
+              name: quartermaster-creds-2
+              key: username
+        - name: PASSWORD2
+          valueFrom:
+            secretKeyRef:
+              name: quartermaster-creds-2
+              key: password
       volumes:
       - name: config-volume
         configMap:
