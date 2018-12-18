@@ -25,6 +25,9 @@ data:
       url: https://ops.mydomain.com/quartermaster
       usernameVar: USERNAME2
       passwordVar: PASSWORD2
+    metadata:
+      platform: baremetal
+      region: east
     resources:
     - name: services
       assetId: svc

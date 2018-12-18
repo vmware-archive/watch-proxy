@@ -54,6 +54,7 @@ Configuration for Quartermaster is done via a config file, which, when deployed 
     - `usernameVar` A basic auth username used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
     - `passwordVar` A basic auth password used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
     - `namespaces` An array of namespaces to report on.  If specified, only resources in the configured namespaces will be included in the payload.  If this option is not configured, all resources from all namespaces will be reported.
+* `metadata` Arbitrary key-value pairs that will be added to the root of every payload.
 * `resources` An array of Kubernetes resources that Quartermaster should watch.  The following can be defined for each resource:
     - `name` The name of the resource.  The following resources are supported:
         * Kubernetes:
