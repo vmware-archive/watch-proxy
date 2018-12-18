@@ -5,23 +5,42 @@ metadata:
   namespace: heptio-qm
 data:
   config.yaml: |-
-    clusterName: "test-cluster"
-    # Minutes quatermaster should remember it previously emitted an object and that object's
-    # state at the given time. Specified with seconds (s), minutes (m), or hours (h).
+    clusterName: "dev-cluster"
     emitCacheDuration: 14400m
     # Minutes quartermaster should wait before attempting to re-process all objects inside of kubernetes.
     # If state of object during re-upload hasn't changed since last emit (meaning quartermaster still has
     # a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value
     # to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
     forceReuploadDuration: 500h
-    remoteEndpoint:
-      type: http
-      url: http://example.com/api/v1/events/k8s-auto-ops  # put your enpoint URL here
+    remoteEndpoints:
+    - type: http
+      url: https://appteams.mydomain.com/quartermaster
+      usernameVar: USERNAME1
+      passwordVar: PASSWORD1
+      namespaces:
+      - team1
+      - team2
+      - team3
+    - type: http
+      url: https://ops.mydomain.com/quartermaster
+      usernameVar: USERNAME2
+      passwordVar: PASSWORD2
+    metadata:
+      platform: baremetal
+      region: east
     resources:
     - name: services
-      assetId: service
+      assetId: svc
       pruneFields:
       - metadata.resourceVersion
       - metadata.generation
+      - metadata.annotations
+      - status.observedGeneration
+    - name: namespaces
+      assetId: ns
+      pruneFields:
+      - metadata.resourceVersion
+      - metadata.generation
+      - metadata.annotations
       - status.observedGeneration
 
