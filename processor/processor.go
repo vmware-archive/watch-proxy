@@ -108,7 +108,9 @@ func process(key string) error {
 	}
 
 	// check whether object was previously emitted in exact state; if so, do nothing.
-	if emitter.WasEmitted(*obj) {
+	// however if the event was a delete it should still be emitted.
+	event := strings.Split(key, "|")[0]
+	if emitter.WasEmitted(*obj) && event != "delete" {
 		glog.Infof("[%s]: not emitting, state has not changed since last event",
 			obj.Key)
 		return nil
@@ -131,16 +133,8 @@ func getK8sObject(key string) (*emitter.EmitObject, error) {
 	operation := objType[0]
 	uid := objType[1]
 
-	// when operation is delete, don't worry about looking up the objects data, it likely doesn't
-	// exist in the lister/indexer anyways.
-	if operation == kubecluster.DeleteKey {
-		splitType := []string{objType[2], objType[3]}
-		return &emitter.EmitObject{nil, splitType[0], objType[0] + "|" + objType[1], uid,
-			operation}, nil
-	}
-
 	// update or add operation occured, lookup object in lister and create emittable object
-	objType = []string{objType[2], objType[3]}
+	objType = []string{objType[2], objType[3], objType[4]}
 	glog.Infof("[%s]: event triggered", key)
 	switch objType[0] {
 	case "namespaces":
@@ -210,13 +204,18 @@ func getK8sObject(key string) (*emitter.EmitObject, error) {
 
 	}
 
-	jsonBody, err := json.Marshal(obj)
-	if err != nil {
-		return nil, err
+	mapO := make(map[string]interface{})
+	if operation == kubecluster.DeleteKey {
+		jsonBody := []byte(objType[2])
+		json.Unmarshal(jsonBody, &mapO)
+	} else {
+		jsonBody, err := json.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		json.Unmarshal(jsonBody, &mapO)
 	}
 
-	mapO := make(map[string]interface{})
-	json.Unmarshal(jsonBody, &mapO)
 	fieldsToPrune := lookupPruneFields(objType[0])
 	for _, fieldToPrune := range fieldsToPrune {
 		fieldToPrune := strings.Split(fieldToPrune, ".")
