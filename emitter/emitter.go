@@ -231,9 +231,6 @@ func process(emissions []Emission) {
 	for {
 		time.Sleep(processWaitTime)
 		emitWhenReady(emissions)
-		for i, _ := range emissions {
-			emissions[i].EmittableList = []EmitObject{}
-		}
 	}
 }
 
@@ -279,15 +276,12 @@ func emitWhenReady(emissions []Emission) {
 	}
 
 	for _, emission := range emissions {
-		if len(emission.EmittableList) > 0 {
-
-			if emission.EmitType == "sqs" {
-				EmitChangesSQS(emission)
-				return
-			}
-
-			EmitChanges(emission)
+		if emission.EmitType == "sqs" {
+			EmitChangesSQS(emission)
+			return
 		}
+
+		EmitChanges(emission)
 	}
 }
 

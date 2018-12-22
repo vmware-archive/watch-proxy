@@ -179,22 +179,24 @@ func (ic InformerClient) Start() {
 				return
 			}
 			if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
-				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s", addKey, ic.clusterName+"-"+configureUID(obj),
+				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|x", addKey, ic.clusterName+"-"+configureUID(obj),
 					ic.resource, key))
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			if key, err := cache.MetaNamespaceKeyFunc(newObj); err == nil {
-				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s", updateKey, ic.clusterName+"-"+configureUID(newObj),
+				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|x", updateKey, ic.clusterName+"-"+configureUID(newObj),
 					ic.resource, key))
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			if key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj); err == nil {
-				d, _ := json.Marshal(obj)
-				glog.Infof("%s", d)
-				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s", DeleteKey, ic.clusterName+"-"+configureUID(obj),
-					ic.resource, key))
+				mObj, err := json.Marshal(obj)
+				if err != nil {
+					glog.Errorf("failed to marshal deleted object: %s", err)
+				}
+				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|%s", DeleteKey, ic.clusterName+"-"+configureUID(obj),
+					ic.resource, key, mObj))
 			}
 		},
 	}
