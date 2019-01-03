@@ -17,8 +17,10 @@ package main
 import (
 	"flag"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/heptio/quartermaster/config"
@@ -38,6 +40,9 @@ var (
 func main() {
 	parseFlags()
 	glog.Infoln("starting quartermaster")
+
+	// start liveness checker
+	go checkLiveness()
 
 	// create clients for kubernetes resources and virtualservice resources
 	clientset, vsClientset, err := kubecluster.NewK8sClient(kubeconfigPath)
@@ -134,4 +139,55 @@ func watchConfiguration(ics kubecluster.InformerClients, fileChange chan bool,
 			"s: %s", ics)
 	}
 
+}
+
+func checkLiveness() {
+	for {
+		livenessChecker()
+		time.Sleep(10 * time.Second)
+	}
+}
+
+// livenessChecker checks for the existence of the /processing file and
+// the age of the /emitting file.  If both checks pass it touches the /healthy
+// file which a livenessProbe can use to establish liveness for Quartermaster.
+// If either check fails the /healthy file is removed.
+func livenessChecker() {
+
+	if _, err := os.Stat("/processing"); os.IsNotExist(err) {
+		glog.Infoln("did not find processing file for liveness check")
+		err := exec.Command("rm", "/healthy").Run()
+		if err != nil {
+			glog.Infoln("no healthy file for liveness check")
+		}
+		return
+	}
+
+	info, eerr := os.Stat("/emitting")
+	if eerr != nil {
+		glog.Infoln("did not find emitting file for liveness check")
+		err := exec.Command("rm", "/healthy").Run()
+		if err != nil {
+			glog.Infoln("no healthy file for liveness check")
+		}
+		return
+	}
+	modified := info.ModTime()
+	age := time.Now().Sub(modified)
+
+	if age > 10*time.Second {
+		glog.Infoln("emitting file older than 10 seconds which is unhealthy")
+		err := exec.Command("rm", "/healthy").Run()
+		if err != nil {
+			glog.Infoln("no healthy file for liveness check")
+		}
+		return
+	}
+
+	herr := exec.Command("touch", "/healthy").Run()
+	if herr != nil {
+		glog.Errorf("failed to touch healthy file for liveness check. error: %s", herr)
+	}
+
+	glog.Infoln("quartermaster healthy file touched for liveness check")
 }

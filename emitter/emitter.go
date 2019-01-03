@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -231,6 +232,12 @@ func process(emissions []Emission) {
 	for {
 		time.Sleep(processWaitTime)
 		emitWhenReady(emissions)
+		err := exec.Command("touch", "/emitting").Run()
+		if err != nil {
+			glog.Errorf("failed to touch emitting file for liveness check. error: %s", err)
+		} else {
+			glog.Info("touched emitting file for liveness check")
+		}
 	}
 }
 

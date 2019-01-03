@@ -19,6 +19,7 @@ package processor
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -39,7 +40,7 @@ var (
 )
 
 // StartProcessor starts the go routine responsible for checking to see if there are events from
-// informers that should make there way to the emit queue.
+// informers that should make their way to the emit queue.
 func StartProcessor(resources []config.Resource) {
 	PruneFieldsLock = sync.RWMutex{}
 	SetPruneFields(resources)
@@ -48,8 +49,24 @@ func StartProcessor(resources []config.Resource) {
 }
 
 func runProcessor() {
+	// touch a processing file to indicate processor is running
+	terr := exec.Command("touch", "/processing").Run()
+	if terr != nil {
+		glog.Errorf("failed to touch processing file for liveness check. error: %s", terr)
+	} else {
+		glog.Info("touched processing file for liveness check")
+	}
+
 	for processNext() {
 		time.Sleep(processWaitTime)
+	}
+
+	// if processNext() returns false, remove the file to indicate processor has stopped
+	rerr := exec.Command("rm", "/processing").Run()
+	if rerr != nil {
+		glog.Errorf("failed to remove processing file for liveness check. error: %s", rerr)
+	} else {
+		glog.Info("removed procssing file for liveness check")
 	}
 }
 

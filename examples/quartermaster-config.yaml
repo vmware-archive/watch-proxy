@@ -14,15 +14,13 @@ data:
     forceReuploadDuration: 500h
     remoteEndpoints:
     - type: http
-      url: https://appteams.mydomain.com/quartermaster
+      url: http://echo1/quartermaster
       usernameVar: USERNAME1
       passwordVar: PASSWORD1
       namespaces:
-      - team1
-      - team2
-      - team3
+      - heptio-qm
     - type: http
-      url: https://ops.mydomain.com/quartermaster
+      url: http://echo2/quartermaster
       usernameVar: USERNAME2
       passwordVar: PASSWORD2
     metadata:

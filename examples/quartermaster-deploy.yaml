@@ -25,6 +25,13 @@ spec:
             limits:
                 memory: "512Mi"
                 cpu: "150m"
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /healthy
+          initialDelaySeconds: 25
+          periodSeconds: 15
         volumeMounts:
         - name: config-volume
           mountPath: /etc/quartermaster
