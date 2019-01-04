@@ -12,6 +12,9 @@ data:
     # a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value
     # to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
     forceReuploadDuration: 500h
+    prometheusMetrics:
+      port: 9595
+      path: /metrics
     remoteEndpoints:
     - type: http
       url: https://appteams.mydomain.com/quartermaster

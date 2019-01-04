@@ -46,6 +46,9 @@ Configuration for Quartermaster is done via a config file, which, when deployed 
 * `clusterName` Name of the cluster Quartermaster is deployed to.  This is an arbitrary value but should be meaninfgul to the endpoint that is processing the payload, especially when it is receiving reports from multiple clusters.
 * `emitCacheDuration` Amount of time quatermaster should remember it previously emitted an object and that object's state at the given time. Specified with seconds (s), minutes (m), or hours (h).
 * `forceReuploadDuration` Amount of time quartermaster should wait before attempting to re-process all objects inside of kubernetes. If state of object during re-upload hasn't changed since last emit (meaning quartermaster still has a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
+* `prometheusMetrics` Configuration for exposing prometheus metrics:
+    - `port` The port to expose the metrics on.  This value must be supplied to activate prometheus metrics.  Supply a string or int with a valid port number.
+    - `path` The path at which to expose metrics.  Supply a string including the leading forward slash.  If not defined will default to "/metrics".
 * `remoteEndpoints` An array of destinations to send payloads to. The following can be defined for each endpoint:
     - `type` The type of endpoint.  The following are supported:
         * `http` An HTTP or HTTPS REST API endpoint.

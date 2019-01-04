@@ -27,6 +27,7 @@ import (
 	"github.com/heptio/quartermaster/config"
 	"github.com/heptio/quartermaster/emitter"
 	"github.com/heptio/quartermaster/kubecluster"
+	"github.com/heptio/quartermaster/metrics"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -117,6 +118,9 @@ func process(key string) error {
 	}
 	glog.Infof("[%s]: queued to emit", obj.Key)
 	emitter.EmitQueue <- *obj
+
+	// increment objects processed counter for prometheus metrics
+	metrics.ProcessCount.Inc()
 
 	return nil
 }
