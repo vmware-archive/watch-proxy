@@ -34,6 +34,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/golang/glog"
 	"github.com/heptio/quartermaster/config"
+	"github.com/heptio/quartermaster/metrics"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -120,12 +121,15 @@ func EmitChanges(emission Emission) {
 			glog.Error("failed to read response body from remote endpoint: %s", err)
 		}
 		glog.Infof("response body from remote endpoint: %s", string(bodyBytes))
-	}
+	} else {
+		// record all successfully emitted objects for hash comparison
+		for _, entry := range emission.EmittableList {
+			recordEmitted(entry)
+			glog.Infof("[%s]: emitted.", entry.Key)
+		}
 
-	// record all successfully emitted objects
-	for _, entry := range emission.EmittableList {
-		recordEmitted(entry)
-		glog.Infof("[%s]: emitted.", entry.Key)
+		// increment payload emission counter for prometheus metrics
+		metrics.PayloadCount.Inc()
 	}
 }
 
@@ -174,6 +178,10 @@ func EmitChangesSQS(emission Emission) error {
 	for _, entry := range emission.EmittableList {
 		recordEmitted(entry)
 	}
+
+	// increment payload emission counter for prometheus metrics
+	metrics.PayloadCount.Inc()
+
 	glog.Infof("Object: sent to sqs: %s", result.String())
 	return nil
 }

@@ -30,6 +30,7 @@ type Config struct {
 	ResourcesWatch        []Resource       `yaml:"resources"`
 	NewResources          []Resource
 	StaleResources        []Resource
+	PrometheusMetrics     PrometheusConfig       `yaml:"prometheusMetrics"`
 	ClusterName           string                 `yaml:"clusterName"`
 	DeltaUpdates          bool                   `yaml:"deltaUpdates"`
 	DelayStartSeconds     string                 `yaml:"delayAddEventDuration"`
@@ -51,6 +52,11 @@ type RemoteEndpoint struct {
 	Namespaces  []string `yaml:"namespaces"`
 	UsernameVar string   `yaml:"usernameVar"`
 	PasswordVar string   `yaml:"passwordVar"`
+}
+
+type PrometheusConfig struct {
+	Port string `yaml:"port"`
+	Path string `yaml:"path"`
 }
 
 // ReadConfig reads info from a config file based on the passed configPath.
