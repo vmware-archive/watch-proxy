@@ -150,8 +150,10 @@ func checkLiveness() {
 
 // livenessChecker checks for the existence of the /processing file and
 // the age of the /emitting file.  If both checks pass it touches the /healthy
-// file which a livenessProbe can use to establish liveness for Quartermaster.
+// file which an exec livenessProbe can use to establish liveness for Quartermaster.
 // If either check fails the /healthy file is removed.
+// An exec liveness probe is used here for compatibility with clusters using
+// mTLS which prevents using an HTTP probe.
 func livenessChecker() {
 
 	if _, err := os.Stat("/processing"); os.IsNotExist(err) {

@@ -25,6 +25,7 @@ spec:
             limits:
                 memory: "512Mi"
                 cpu: "150m"
+        # a command-based liveness probe for compatibility with clusters using mTLS
         livenessProbe:
           exec:
             command:
