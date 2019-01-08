@@ -37,6 +37,7 @@ type Config struct {
 	EmitCacheDuration     string                 `yaml:"emitCacheDuration"`
 	ForceReuploadDuration string                 `yaml:"forceReuploadDuration"`
 	Metadata              map[string]interface{} `yaml:"metadata"`
+	HttpLiveness          HttpLivenessConfig     `yaml:"httpLiveness"`
 }
 
 type Resource struct {
@@ -55,6 +56,11 @@ type RemoteEndpoint struct {
 }
 
 type PrometheusConfig struct {
+	Port string `yaml:"port"`
+	Path string `yaml:"path"`
+}
+
+type HttpLivenessConfig struct {
 	Port string `yaml:"port"`
 	Path string `yaml:"path"`
 }

@@ -15,6 +15,9 @@ data:
     prometheusMetrics:
       port: 9595
       path: /metrics
+    httpLiveness:
+      port: 8080
+      path: /live
     remoteEndpoints:
     - type: http
       url: http://echo1/quartermaster

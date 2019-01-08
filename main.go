@@ -16,9 +16,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -42,9 +45,6 @@ func main() {
 	parseFlags()
 	glog.Infoln("starting quartermaster")
 
-	// start liveness checker
-	go checkLiveness()
-
 	// create clients for kubernetes resources and virtualservice resources
 	clientset, vsClientset, err := kubecluster.NewK8sClient(kubeconfigPath)
 	if err != nil {
@@ -57,6 +57,9 @@ func main() {
 		panic(err.Error())
 	}
 	qmConfig := *parsedConfig
+
+	// start liveness checker
+	go checkLiveness(qmConfig)
 
 	// expose prometheus metrics if configured
 	merr := metrics.Metrics(qmConfig)
@@ -148,7 +151,13 @@ func watchConfiguration(ics kubecluster.InformerClients, fileChange chan bool,
 
 }
 
-func checkLiveness() {
+func checkLiveness(qmConfig config.Config) {
+
+	// if an httpLiveness.port is defined, serve a liveness check
+	if qmConfig.HttpLiveness.Port != "" {
+		go httpLiveness(qmConfig)
+	}
+
 	for {
 		livenessChecker()
 		time.Sleep(10 * time.Second)
@@ -199,4 +208,34 @@ func livenessChecker() {
 	}
 
 	glog.Infoln("quartermaster healthy file touched for liveness check")
+}
+
+func httpLiveness(qmConfig config.Config) {
+
+	_, err := strconv.Atoi(qmConfig.HttpLiveness.Port)
+	if err != nil {
+		glog.Errorf("%s is not a valid port number for liveness check", qmConfig.HttpLiveness.Port)
+		return
+	}
+	livenessPort := ":" + qmConfig.HttpLiveness.Port
+
+	livenessPath := "/live"
+	if qmConfig.HttpLiveness.Path != "" {
+		livenessPath = qmConfig.HttpLiveness.Path
+	}
+
+	http.HandleFunc(livenessPath, func(w http.ResponseWriter, r *http.Request) {
+		_, err := os.Stat("/healthy")
+		if err != nil {
+			// return 503
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, "Service Unavailable\n")
+		} else {
+			// return 200
+			fmt.Fprintf(w, "OK\n")
+		}
+	})
+
+	glog.Infof("serving HTTP liveness checks on port %s at path %s:", livenessPort, livenessPath)
+	http.ListenAndServe(livenessPort, nil)
 }
