@@ -27,6 +27,7 @@ import (
 	vs_clientset "github.com/heptio/quartermaster/custom/client/clientset/versioned"
 	"github.com/heptio/quartermaster/emitter"
 	"github.com/heptio/quartermaster/kubecluster"
+	"github.com/heptio/quartermaster/metrics"
 	"github.com/heptio/quartermaster/processor"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/workqueue"
@@ -56,6 +57,12 @@ func main() {
 		panic(err.Error())
 	}
 	qmConfig := *parsedConfig
+
+	// expose prometheus metrics if configured
+	merr := metrics.Metrics(qmConfig)
+	if merr != nil {
+		panic(merr.Error())
+	}
 
 	// create workqueue where all objects triggered by events go and start processor that reads
 	// from the queue
