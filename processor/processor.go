@@ -14,6 +14,7 @@
 
 // Package processor implements the logic for reading queued events that come from configured
 // informers.
+
 package processor
 
 import (

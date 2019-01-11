@@ -1,6 +1,8 @@
 ---
-remoteEndpoint: "http://test.default.svc.cluster.local"
+remoteEndpoints:
+  - type: http
+    url: "http://test.default.svc.cluster.local"
 resources:
-  - namespaces
-  - pods
-  - deployments
+  - name: namespaces
+  - name: pods
+  - name: deployments
