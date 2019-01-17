@@ -8,7 +8,7 @@ deps: ## Install/Update depdendencies
 	dep ensure -v
 
 test: ## Run tests
-	go test ./... -v
+	go test ./config ./emitter ./metrics -v
 
 image: ## Build Docker image
 	docker build .

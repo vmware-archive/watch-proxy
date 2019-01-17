@@ -64,7 +64,7 @@ func main() {
 	// expose prometheus metrics if configured
 	merr := metrics.Metrics(qmConfig)
 	if merr != nil {
-		panic(merr.Error())
+		glog.Errorln(merr)
 	}
 
 	// create workqueue where all objects triggered by events go and start processor that reads
