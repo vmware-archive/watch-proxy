@@ -240,6 +240,11 @@ func process(emissions []Emission) {
 	for {
 		time.Sleep(processWaitTime)
 		emitWhenReady(emissions)
+
+		for i, _ := range emissions {
+			emissions[i].EmittableList = []EmitObject{}
+		}
+
 		err := exec.Command("touch", "/emitting").Run()
 		if err != nil {
 			glog.Errorf("failed to touch emitting file for liveness check. error: %s", err)
@@ -291,12 +296,15 @@ func emitWhenReady(emissions []Emission) {
 	}
 
 	for _, emission := range emissions {
-		if emission.EmitType == "sqs" {
-			EmitChangesSQS(emission)
-			return
-		}
+		if len(emission.EmittableList) > 0 {
 
-		EmitChanges(emission)
+			if emission.EmitType == "sqs" {
+				EmitChangesSQS(emission)
+				return
+			}
+
+			EmitChanges(emission)
+		}
 	}
 }
 
