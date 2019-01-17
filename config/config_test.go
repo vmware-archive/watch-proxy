@@ -24,11 +24,22 @@ import (
 
 func TestReadConfig(t *testing.T) {
 	goodConfig := Config{
-		RemoteEndpoint: "http://test.default.svc.cluster.local",
-		ResourcesWatch: []string{
-			"namespaces",
-			"pods",
-			"deployments",
+		Endpoints: []RemoteEndpoint{
+			RemoteEndpoint{
+				Type: "http",
+				Url:  "http://test.default.svc.cluster.local",
+			},
+		},
+		ResourcesWatch: []Resource{
+			Resource{
+				Name: "namespaces",
+			},
+			Resource{
+				Name: "pods",
+			},
+			Resource{
+				Name: "deployments",
+			},
 		},
 	}
 	testConf, err := ReadConfig("test_config.yaml")
@@ -36,48 +47,65 @@ func TestReadConfig(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	if goodConfig.RemoteEndpoint != testConf.RemoteEndpoint {
+	if goodConfig.Endpoints[0].Url != testConf.Endpoints[0].Url {
 		t.Errorf("RemoteEndpoint Configurations do not match, got: %v, want: %v.",
-			testConf.RemoteEndpoint, goodConfig.RemoteEndpoint)
+			testConf.Endpoints[0].Url, goodConfig.Endpoints[0].Url)
 	}
 
-	sort.Strings(goodConfig.ResourcesWatch)
-	sort.Strings(testConf.ResourcesWatch)
-	for i := 0; i < len(goodConfig.ResourcesWatch); i++ {
-		if goodConfig.ResourcesWatch[i] != testConf.ResourcesWatch[i] {
+	goodConfigResources := []string{}
+	testConfigResources := []string{}
+	for _, r := range goodConfig.ResourcesWatch {
+		goodConfigResources = append(goodConfigResources, r.Name)
+	}
+	for _, r := range testConf.ResourcesWatch {
+		testConfigResources = append(testConfigResources, r.Name)
+	}
+	sort.Strings(goodConfigResources)
+	sort.Strings(testConfigResources)
+	for i := 0; i < len(goodConfigResources); i++ {
+		if goodConfigResources[i] != testConfigResources[i] {
 			t.Errorf("ResourcesWatch Configurations do not match, got: %v, want: %v.",
-				testConf.ResourcesWatch[i], goodConfig.ResourcesWatch[i])
+				testConfigResources[i], goodConfigResources[i])
 		}
 	}
-
 }
 
 func TestDiffConfig(t *testing.T) {
-	oldRes := []string{"namespaces", "pods"}
-	newRes := []string{"deployments", "pods"}
+	oldRes := []Resource{
+		Resource{Name: "namespaces"},
+		Resource{Name: "pods"},
+	}
+	newRes := []Resource{
+		Resource{Name: "deployments"},
+		Resource{Name: "pods"},
+	}
 	newResWatch := []string{"deployments", "pods"}
 	testConfig := Config{}
 
 	testConfig.DiffConfig(oldRes, newRes)
 	for i := 0; i < len(testConfig.NewResources); i++ {
-		if testConfig.NewResources[i] != newRes[i] {
+		if testConfig.NewResources[i].Name != newRes[i].Name {
 			t.Errorf("NewResources Configurations do not match, got: %v, want: %v.",
-				testConfig.NewResources[i], newRes[i])
+				testConfig.NewResources[i].Name, newRes[i].Name)
 		}
 	}
 
 	for i := 0; i < len(testConfig.StaleResources); i++ {
-		if testConfig.StaleResources[i] != "namespaces" {
+		if testConfig.StaleResources[i].Name != "namespaces" {
 			t.Errorf("StaleResources Configurations do not match, got: %v, want: %v.",
-				testConfig.StaleResources[i], "namespaces")
+				testConfig.StaleResources[i].Name, "namespaces")
 		}
 	}
 
-	sort.Strings(testConfig.ResourcesWatch)
-	for i := 0; i < len(testConfig.ResourcesWatch); i++ {
-		if testConfig.ResourcesWatch[i] != newResWatch[i] {
+	testResWatch := []string{}
+	for _, r := range testConfig.ResourcesWatch {
+		testResWatch = append(testResWatch, r.Name)
+	}
+	sort.Strings(testResWatch)
+	for i := 0; i < len(testResWatch); i++ {
+		if testResWatch[i] != newResWatch[i] {
 			t.Errorf("ResourcesWatch Configurations do not match, got: %v, want: %v.",
-				testConfig.ResourcesWatch[i], newResWatch[i])
+				testResWatch[i], newResWatch[i])
 		}
 	}
 }

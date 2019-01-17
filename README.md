@@ -49,6 +49,9 @@ Configuration for Quartermaster is done via a config file, which, when deployed 
 * `prometheusMetrics` Configuration for exposing prometheus metrics:
     - `port` The port to expose the metrics on.  This value must be supplied to activate prometheus metrics.  Supply a string or int with a valid port number.
     - `path` The path at which to expose metrics.  Supply a string including the leading forward slash.  If not defined will default to "/metrics".
+* `httpLiveness` Configuration for HTTP liveness check server:
+    - `port` The port that the liveness check server should listen on.  This value must be supplied to start the liveness server.  Supply a string or int with a valid port number.
+    - `path` The path the liveness checker will send requests to.  If not defined will default to "/live".
 * `remoteEndpoints` An array of destinations to send payloads to. The following can be defined for each endpoint:
     - `type` The type of endpoint.  The following are supported:
         * `http` An HTTP or HTTPS REST API endpoint.

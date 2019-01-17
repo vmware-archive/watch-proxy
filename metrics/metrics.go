@@ -15,6 +15,8 @@
 package metrics
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -48,11 +50,12 @@ func Metrics(qmConfig config.Config) error {
 	} else {
 		_, err := strconv.Atoi(qmConfig.PrometheusMetrics.Port)
 		if err != nil {
-			glog.Errorf("%s is not a valid port number for prometheus", qmConfig.PrometheusMetrics.Port)
+			errorMsg := fmt.Sprintf("%s is not a valid port number for prometheus", qmConfig.PrometheusMetrics.Port)
+			return errors.New(errorMsg)
 		}
 		promPort = ":" + qmConfig.PrometheusMetrics.Port
 
-		if qmConfig.PrometheusMetrics.Port == "" {
+		if qmConfig.PrometheusMetrics.Path == "" {
 			promPath = "/metrics"
 		} else {
 			promPath = qmConfig.PrometheusMetrics.Path

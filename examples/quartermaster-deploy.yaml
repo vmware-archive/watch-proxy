@@ -25,6 +25,21 @@ spec:
             limits:
                 memory: "512Mi"
                 cpu: "150m"
+        livenessProbe:
+          httpGet:
+            port: 8080
+            path: /live
+          initialDelaySeconds: 25
+          periodSeconds: 15
+        # an alternative command-based liveness probe for compatibility with
+        # clusters using mTLS
+        #livenessProbe:
+        #  exec:
+        #    command:
+        #    - cat
+        #    - /healthy
+        #  initialDelaySeconds: 25
+        #  periodSeconds: 15
         volumeMounts:
         - name: config-volume
           mountPath: /etc/quartermaster
