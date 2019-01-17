@@ -52,7 +52,7 @@ func Metrics(qmConfig config.Config) error {
 		}
 		promPort = ":" + qmConfig.PrometheusMetrics.Port
 
-		if qmConfig.PrometheusMetrics.Port == "" {
+		if qmConfig.PrometheusMetrics.Path == "" {
 			promPath = "/metrics"
 		} else {
 			promPath = qmConfig.PrometheusMetrics.Path
