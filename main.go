@@ -16,9 +16,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/heptio/quartermaster/config"
@@ -52,6 +57,9 @@ func main() {
 		panic(err.Error())
 	}
 	qmConfig := *parsedConfig
+
+	// start liveness checker
+	go checkLiveness(qmConfig)
 
 	// expose prometheus metrics if configured
 	merr := metrics.Metrics(qmConfig)
@@ -141,4 +149,93 @@ func watchConfiguration(ics kubecluster.InformerClients, fileChange chan bool,
 			"s: %s", ics)
 	}
 
+}
+
+func checkLiveness(qmConfig config.Config) {
+
+	// if an httpLiveness.port is defined, serve a liveness check
+	if qmConfig.HttpLiveness.Port != "" {
+		go httpLiveness(qmConfig)
+	}
+
+	for {
+		livenessChecker()
+		time.Sleep(10 * time.Second)
+	}
+}
+
+// livenessChecker checks for the existence of the /processing file and
+// the age of the /emitting file.  If both checks pass it touches the /healthy
+// file which an exec livenessProbe can use to establish liveness for Quartermaster.
+// If either check fails the /healthy file is removed.
+// An exec liveness probe is used here for compatibility with clusters using
+// mTLS which prevents using an HTTP probe.
+func livenessChecker() {
+
+	if _, err := os.Stat("/processing"); os.IsNotExist(err) {
+		glog.Infoln("did not find processing file for liveness check")
+		err := exec.Command("rm", "/healthy").Run()
+		if err != nil {
+			glog.Infoln("no healthy file for liveness check")
+		}
+		return
+	}
+
+	info, eerr := os.Stat("/emitting")
+	if eerr != nil {
+		glog.Infoln("did not find emitting file for liveness check")
+		err := exec.Command("rm", "/healthy").Run()
+		if err != nil {
+			glog.Infoln("no healthy file for liveness check")
+		}
+		return
+	}
+	modified := info.ModTime()
+	age := time.Now().Sub(modified)
+
+	if age > 10*time.Second {
+		glog.Infoln("emitting file older than 10 seconds which is unhealthy")
+		err := exec.Command("rm", "/healthy").Run()
+		if err != nil {
+			glog.Infoln("no healthy file for liveness check")
+		}
+		return
+	}
+
+	herr := exec.Command("touch", "/healthy").Run()
+	if herr != nil {
+		glog.Errorf("failed to touch healthy file for liveness check. error: %s", herr)
+	}
+
+	glog.Infoln("quartermaster healthy file touched for liveness check")
+}
+
+func httpLiveness(qmConfig config.Config) {
+
+	_, err := strconv.Atoi(qmConfig.HttpLiveness.Port)
+	if err != nil {
+		glog.Errorf("%s is not a valid port number for liveness check", qmConfig.HttpLiveness.Port)
+		return
+	}
+	livenessPort := ":" + qmConfig.HttpLiveness.Port
+
+	livenessPath := "/live"
+	if qmConfig.HttpLiveness.Path != "" {
+		livenessPath = qmConfig.HttpLiveness.Path
+	}
+
+	http.HandleFunc(livenessPath, func(w http.ResponseWriter, r *http.Request) {
+		_, err := os.Stat("/healthy")
+		if err != nil {
+			// return 503
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, "Service Unavailable\n")
+		} else {
+			// return 200
+			fmt.Fprintf(w, "OK\n")
+		}
+	})
+
+	glog.Infof("serving HTTP liveness checks on port %s at path %s:", livenessPort, livenessPath)
+	http.ListenAndServe(livenessPort, nil)
 }

@@ -31,7 +31,6 @@ push: container
 clean:
 	rm server
 
-release:  ## Build binary, build docker image, push docker image, clean up
-	push clean
+release: push clean ## Build binary and docker image, push image, clean up
 
 .PHONY: all deps test image
