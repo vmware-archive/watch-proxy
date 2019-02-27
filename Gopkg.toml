@@ -14,3 +14,7 @@
   name = "github.com/patrickmn/go-cache"
   version = "2.1.0"
 
+[[override]]
+  name = "github.com/golang/protobuf"
+  version = "v1.3.0"
+
