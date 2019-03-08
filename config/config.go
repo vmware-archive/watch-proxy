@@ -35,6 +35,8 @@ type Config struct {
 	DeltaUpdates          bool                   `yaml:"deltaUpdates"`
 	DelayStartSeconds     string                 `yaml:"delayAddEventDuration"`
 	EmitCacheDuration     string                 `yaml:"emitCacheDuration"`
+	EmitBatchMaxObjects   int                    `yaml:"emitBatchMaxObjects"`
+	EmitInterval          int                    `yaml:"emitInterval"`
 	ForceReuploadDuration string                 `yaml:"forceReuploadDuration"`
 	Metadata              map[string]interface{} `yaml:"metadata"`
 	HttpLiveness          HttpLivenessConfig     `yaml:"httpLiveness"`
@@ -132,7 +134,7 @@ func fileWatcher(changed chan bool, file string) {
 		for {
 			info, err := os.Stat(file)
 			if err != nil {
-				glog.Errorf("error accessing file. error: ", err)
+				glog.Errorf("error accessing file. error: %s", err)
 			}
 
 			modTime := info.ModTime()
