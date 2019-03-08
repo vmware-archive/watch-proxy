@@ -159,7 +159,7 @@ func checkLiveness(qmConfig config.Config) {
 	}
 
 	for {
-		livenessChecker()
+		livenessChecker(qmConfig.EmitInterval)
 		time.Sleep(10 * time.Second)
 	}
 }
@@ -170,7 +170,7 @@ func checkLiveness(qmConfig config.Config) {
 // If either check fails the /healthy file is removed.
 // An exec liveness probe is used here for compatibility with clusters using
 // mTLS which prevents using an HTTP probe.
-func livenessChecker() {
+func livenessChecker(emitInterval int) {
 
 	if _, err := os.Stat("/processing"); os.IsNotExist(err) {
 		glog.Infoln("did not find processing file for liveness check")
@@ -192,9 +192,10 @@ func livenessChecker() {
 	}
 	modified := info.ModTime()
 	age := time.Now().Sub(modified)
+	unhealthyAge := emitInterval * 5
 
-	if age > 10*time.Second {
-		glog.Infoln("emitting file older than 10 seconds which is unhealthy")
+	if age > time.Second*time.Duration(unhealthyAge) {
+		glog.Infof("emitting file older than %d seconds which is unhealthy", unhealthyAge)
 		err := exec.Command("rm", "/healthy").Run()
 		if err != nil {
 			glog.Infoln("no healthy file for liveness check")

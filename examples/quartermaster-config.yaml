@@ -7,6 +7,8 @@ data:
   config.yaml: |-
     clusterName: "dev-cluster"
     emitCacheDuration: 14400m
+    emitBatchMaxObjects: 10
+    emitInterval: 1
     # Minutes quartermaster should wait before attempting to re-process all objects inside of kubernetes.
     # If state of object during re-upload hasn't changed since last emit (meaning quartermaster still has
     # a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value

@@ -40,9 +40,10 @@ import (
 )
 
 const (
-	processWaitTime      = 1 * time.Second
 	cacheCleanupInterval = 1 * time.Minute
 	cacheFileName        = "/var/lib/quartermaster/cache.gob"
+	emitObjectMaxDefault = 10
+	emitIntervalDefault  = 1
 )
 
 type EmitObject struct {
@@ -119,7 +120,7 @@ func EmitChanges(emission Emission) {
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			glog.Error("failed to read response body from remote endpoint: %s", err)
+			glog.Errorf("failed to read response body from remote endpoint: %s", err)
 		}
 		glog.Infof("response body from remote endpoint: %s", string(bodyBytes))
 	} else {
@@ -220,7 +221,7 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 
 		glog.Infof("starting emitter for sending to %s", endpoint.Type)
 	}
-	go process(emissions)
+	go process(emissions, c)
 	go persistCacheTimer()
 }
 
@@ -236,10 +237,16 @@ func createAWSClient(endpoint config.RemoteEndpoint) *sqs.SQS {
 	return sqs.New(sess)
 }
 
-func process(emissions []Emission) {
+func process(emissions []Emission, c config.Config) {
+
+	processWaitTime := emitIntervalDefault
+	if c.EmitInterval != 0 {
+		processWaitTime = c.EmitInterval
+	}
+
 	for {
-		time.Sleep(processWaitTime)
-		emitWhenReady(emissions)
+		time.Sleep(time.Second * time.Duration(processWaitTime))
+		emitWhenReady(emissions, c)
 
 		for i, _ := range emissions {
 			emissions[i].EmittableList = []EmitObject{}
@@ -257,15 +264,21 @@ func process(emissions []Emission) {
 // emitWhenReady checks whether there are 10 or more items ready to be emitter or if emitting
 // hasn't occured since the last upper period of time. If either condition is true, a batch is
 // sent to be emitted.
-func emitWhenReady(emissions []Emission) {
+func emitWhenReady(emissions []Emission, c config.Config) {
 	if len(EmitQueue) < 1 {
 		glog.Infof("no objects to emit")
 		return
 	}
 
-	if len(EmitQueue) >= 10 {
-		glog.Infof("emitting batch of 10 objects")
-		for i := 0; i < 10; i++ {
+	// determine max number of objects to emit per batch
+	maxBatch := emitObjectMaxDefault
+	if c.EmitBatchMaxObjects != 0 {
+		maxBatch = c.EmitBatchMaxObjects
+	}
+
+	if len(EmitQueue) >= maxBatch {
+		glog.Infof("emitting batch of %d objects", maxBatch)
+		for i := 0; i < maxBatch; i++ {
 			o := <-EmitQueue
 			for ei, emission := range emissions {
 				emit, err := filterByNamespace(emission.Namespaces, o)
