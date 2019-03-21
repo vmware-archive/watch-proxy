@@ -40,6 +40,7 @@ type Config struct {
 	ForceReuploadDuration string                 `yaml:"forceReuploadDuration"`
 	Metadata              map[string]interface{} `yaml:"metadata"`
 	HttpLiveness          HttpLivenessConfig     `yaml:"httpLiveness"`
+	IgnoreNamespaces      []string               `yaml:"ignoreNamespaces"`
 }
 
 type Resource struct {

@@ -17,6 +17,7 @@ package kubecluster
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -67,17 +68,17 @@ type Informer interface {
 // InformerClient contains configuration for instantiating an informer. Use NewInformerClient to
 // ensure valid configuration is provided.
 type InformerClient struct {
-	client            *kubernetes.Clientset
-	rest              *rest.Interface
-	resource          string
-	namespaceSelector string
-	k8sObjectType     runtime.Object
-	resyncTime        time.Duration
-	processQueue      workqueue.RateLimitingInterface
-	done              chan bool
-	allowAddEvent     bool
-	skipAddEventTime  time.Duration
-	clusterName       string
+	client           *kubernetes.Clientset
+	rest             *rest.Interface
+	resource         string
+	ignoreNamespaces []string
+	k8sObjectType    runtime.Object
+	resyncTime       time.Duration
+	processQueue     workqueue.RateLimitingInterface
+	done             chan bool
+	allowAddEvent    bool
+	skipAddEventTime time.Duration
+	clusterName      string
 }
 
 // InformerClients is a wrapper around []*InformerClient to allow methods to be added such as the
@@ -119,15 +120,15 @@ func NewInformerClient(client *kubernetes.Clientset, vsClient *vs_client.Clients
 
 	doneChannel := make(chan bool)
 	ic := &InformerClient{
-		rest:              r,
-		namespaceSelector: nsSelector,
-		k8sObjectType:     obj,
-		resource:          resource,
-		resyncTime:        resyncDuration,
-		processQueue:      pQueue,
-		done:              doneChannel,
-		skipAddEventTime:  delay,
-		clusterName:       config.ClusterName,
+		rest:             r,
+		ignoreNamespaces: config.IgnoreNamespaces,
+		k8sObjectType:    obj,
+		resource:         resource,
+		resyncTime:       resyncDuration,
+		processQueue:     pQueue,
+		done:             doneChannel,
+		skipAddEventTime: delay,
+		clusterName:      config.ClusterName,
 	}
 	return ic, nil
 }
@@ -168,35 +169,40 @@ func (ic InformerClient) Start() {
 	}
 
 	// watcher and lister configuration for informer
-	watchlist := cache.NewListWatchFromClient(*ic.rest, ic.resource, ic.namespaceSelector,
-		fields.Everything())
+	watchlist := cache.NewListWatchFromClient(*ic.rest, ic.resource, "", fields.Everything())
 
 	// eventhandlers describing what to do upon add, update, and delete events.
 	eHandlers := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			if !ic.addEventAllowed() {
-				glog.Infof("skipping add for %s. start delay in effect", configureUID(obj))
-				return
-			}
-			if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
-				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|x", addKey, ic.clusterName+"-"+configureUID(obj),
-					ic.resource, key))
+			if !ic.ignoreNamespace(obj) {
+				if !ic.addEventAllowed() {
+					glog.Infof("skipping add for %s. start delay in effect", configureUID(obj))
+					return
+				}
+				if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
+					ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|x", addKey, ic.clusterName+"-"+configureUID(obj),
+						ic.resource, key))
+				}
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			if key, err := cache.MetaNamespaceKeyFunc(newObj); err == nil {
-				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|x", updateKey, ic.clusterName+"-"+configureUID(newObj),
-					ic.resource, key))
+			if !ic.ignoreNamespace(newObj) {
+				if key, err := cache.MetaNamespaceKeyFunc(newObj); err == nil {
+					ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|x", updateKey, ic.clusterName+"-"+configureUID(newObj),
+						ic.resource, key))
+				}
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			if key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj); err == nil {
-				mObj, err := json.Marshal(obj)
-				if err != nil {
-					glog.Errorf("failed to marshal deleted object: %s", err)
+			if !ic.ignoreNamespace(obj) {
+				if key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj); err == nil {
+					mObj, err := json.Marshal(obj)
+					if err != nil {
+						glog.Errorf("failed to marshal deleted object: %s", err)
+					}
+					ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|%s", DeleteKey, ic.clusterName+"-"+configureUID(obj),
+						ic.resource, key, mObj))
 				}
-				ic.processQueue.AddRateLimited(fmt.Sprintf("%s|%s|%s|%s|%s", DeleteKey, ic.clusterName+"-"+configureUID(obj),
-					ic.resource, key, mObj))
 			}
 		},
 	}
@@ -336,7 +342,37 @@ func initLister(i cache.Indexer, objType interface{}) error {
 // set when a skipAddEventTime is set.
 func (ic InformerClient) addEventAllowed() bool {
 	return ic.allowAddEvent
+}
 
+// ingoreNamespace checks to see if the object's namespace is being ignored
+// if an object's namespace is in the ignore list, true is returned
+// if an object's namespace is *not* in the ignore list, false is returned
+func (ic InformerClient) ignoreNamespace(obj interface{}) bool {
+
+	b, err := json.Marshal(obj)
+	if err != nil {
+		glog.Errorf("Failed to marshal object json: %s", err)
+	}
+
+	var k8sObj map[string]interface{}
+	err = json.Unmarshal(b, &k8sObj)
+	if err != nil {
+		glog.Errorf("Failed to unmarshal K8s object json: %s", err)
+	}
+
+	metadata, ok := k8sObj["metadata"]
+	if !ok {
+		glog.Errorf("Failed to identify namespace for %s", metadata.(map[string]interface{})["selfLink"].(string))
+	}
+
+	for _, n := range ic.ignoreNamespaces {
+		selfLink := metadata.(map[string]interface{})["selfLink"].(string)
+		if strings.Contains(selfLink, fmt.Sprintf("namespaces/%s", n)) == true {
+			return true
+		}
+	}
+
+	return false
 }
 
 // startSkipAddEventTimer creates a timer for the duration set in the InformerClient's
