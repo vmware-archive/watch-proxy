@@ -164,27 +164,28 @@ func checkLiveness(qmConfig config.Config) {
 	}
 }
 
-// livenessChecker checks for the existence of the /processing file and
-// the age of the /emitting file.  If both checks pass it touches the /healthy
-// file which an exec livenessProbe can use to establish liveness for Quartermaster.
-// If either check fails the /healthy file is removed.
+// livenessChecker checks for the existence of the /quartermaster/processing file and
+// the age of the /quartermaster/emitting file.
+// If both checks pass it touches the /quartermaster/healthy file
+// which an exec livenessProbe can use to establish liveness for Quartermaster.
+// If either check fails the /quartermaster/healthy file is removed.
 // An exec liveness probe is used here for compatibility with clusters using
 // mTLS which prevents using an HTTP probe.
 func livenessChecker(emitInterval int) {
 
-	if _, err := os.Stat("/processing"); os.IsNotExist(err) {
+	if _, err := os.Stat("/quartermaster/processing"); os.IsNotExist(err) {
 		glog.Infoln("did not find processing file for liveness check")
-		err := exec.Command("rm", "/healthy").Run()
+		err := exec.Command("rm", "/quartermaster/healthy").Run()
 		if err != nil {
 			glog.Infoln("no healthy file for liveness check")
 		}
 		return
 	}
 
-	info, eerr := os.Stat("/emitting")
+	info, eerr := os.Stat("/quartermaster/emitting")
 	if eerr != nil {
 		glog.Infoln("did not find emitting file for liveness check")
-		err := exec.Command("rm", "/healthy").Run()
+		err := exec.Command("rm", "/quartermaster/healthy").Run()
 		if err != nil {
 			glog.Infoln("no healthy file for liveness check")
 		}
@@ -196,14 +197,14 @@ func livenessChecker(emitInterval int) {
 
 	if age > time.Second*time.Duration(unhealthyAge) {
 		glog.Infof("emitting file older than %d seconds which is unhealthy", unhealthyAge)
-		err := exec.Command("rm", "/healthy").Run()
+		err := exec.Command("rm", "/quartermaster/healthy").Run()
 		if err != nil {
 			glog.Infoln("no healthy file for liveness check")
 		}
 		return
 	}
 
-	herr := exec.Command("touch", "/healthy").Run()
+	herr := exec.Command("touch", "/quartermaster/healthy").Run()
 	if herr != nil {
 		glog.Errorf("failed to touch healthy file for liveness check. error: %s", herr)
 	}
@@ -226,7 +227,7 @@ func httpLiveness(qmConfig config.Config) {
 	}
 
 	http.HandleFunc(livenessPath, func(w http.ResponseWriter, r *http.Request) {
-		_, err := os.Stat("/healthy")
+		_, err := os.Stat("/quartermaster/healthy")
 		if err != nil {
 			// return 503
 			w.WriteHeader(http.StatusServiceUnavailable)
