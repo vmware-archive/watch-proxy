@@ -13,6 +13,9 @@ spec:
       labels:
         app: quartermaster
     spec:
+      securityContext:
+        runAsUser: 10000
+        fsGroup: 20000
       serviceAccountName: quartermaster-controller
       containers:
       - name: quartermaster
@@ -37,12 +40,14 @@ spec:
         #  exec:
         #    command:
         #    - cat
-        #    - /healthy
+        #    - /quartermaster/healthy
         #  initialDelaySeconds: 25
         #  periodSeconds: 15
         volumeMounts:
         - name: config-volume
           mountPath: /etc/quartermaster
+        - name: scratch-volume
+          mountPath: /quartermaster
         env:
         - name: USERNAME1
           valueFrom:
@@ -68,4 +73,6 @@ spec:
       - name: config-volume
         configMap:
           name: quartermaster
+      - name: scratch-volume
+        emptyDir: {}
 

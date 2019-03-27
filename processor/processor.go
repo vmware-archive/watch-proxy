@@ -52,7 +52,7 @@ func StartProcessor(resources []config.Resource) {
 
 func runProcessor() {
 	// touch a processing file to indicate processor is running
-	terr := exec.Command("touch", "/processing").Run()
+	terr := exec.Command("touch", "/quartermaster/processing").Run()
 	if terr != nil {
 		glog.Errorf("failed to touch processing file for liveness check. error: %s", terr)
 	} else {
@@ -64,7 +64,7 @@ func runProcessor() {
 	}
 
 	// if processNext() returns false, remove the file to indicate processor has stopped
-	rerr := exec.Command("rm", "/processing").Run()
+	rerr := exec.Command("rm", "/quartermaster/processing").Run()
 	if rerr != nil {
 		glog.Errorf("failed to remove processing file for liveness check. error: %s", rerr)
 	} else {

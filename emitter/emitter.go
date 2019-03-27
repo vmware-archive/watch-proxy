@@ -41,7 +41,7 @@ import (
 
 const (
 	cacheCleanupInterval = 1 * time.Minute
-	cacheFileName        = "/var/lib/quartermaster/cache.gob"
+	cacheFileName        = "/quartermaster/cache.gob"
 	emitObjectMaxDefault = 10
 	emitIntervalDefault  = 1
 )
@@ -252,7 +252,7 @@ func process(emissions []Emission, c config.Config) {
 			emissions[i].EmittableList = []EmitObject{}
 		}
 
-		err := exec.Command("touch", "/emitting").Run()
+		err := exec.Command("touch", "/quartermaster/emitting").Run()
 		if err != nil {
 			glog.Errorf("failed to touch emitting file for liveness check. error: %s", err)
 		} else {
