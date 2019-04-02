@@ -43,7 +43,7 @@ const (
 	cacheCleanupInterval = 1 * time.Minute
 	cacheFileName        = "/quartermaster/cache.gob"
 	emitObjectMaxDefault = 10
-	emitIntervalDefault  = 1
+	EmitIntervalDefault  = 1
 )
 
 type EmitObject struct {
@@ -239,7 +239,7 @@ func createAWSClient(endpoint config.RemoteEndpoint) *sqs.SQS {
 
 func process(emissions []Emission, c config.Config) {
 
-	processWaitTime := emitIntervalDefault
+	processWaitTime := EmitIntervalDefault
 	if c.EmitInterval != 0 {
 		processWaitTime = c.EmitInterval
 	}
