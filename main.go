@@ -158,8 +158,13 @@ func checkLiveness(qmConfig config.Config) {
 		go httpLiveness(qmConfig)
 	}
 
+	emitInterval := emitter.EmitIntervalDefault
+	if qmConfig.EmitInterval != 0 {
+		emitInterval = qmConfig.EmitInterval
+	}
+
 	for {
-		livenessChecker(qmConfig.EmitInterval)
+		livenessChecker(emitInterval)
 		time.Sleep(10 * time.Second)
 	}
 }
