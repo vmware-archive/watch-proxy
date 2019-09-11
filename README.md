@@ -79,6 +79,7 @@ Configuration for Quartermaster is done via a config file, which, when deployed 
             - `virtualservices`
     - `assetId` An arbitrary string that can be used by the remote endpoint to help differentiate resources.
     - `pruneFields` Fields to remove from payload. Used to remove useless or sensitive data that you don't wish to send.
+    - `filterEvents` An array of events to ignore.  The three events are `add`, `update` and `delete`.  If you don't need to get notified of any of the three events, include here.
 * `deltaUpdates` Do you wish to send a full object of all the kubernetes resources we are watching, or just the the items have have changed? This is a bool and expects either `true` or `false`.
 * `ignoreNamespaces` An array of namespaces you wish to always ignore.  No events in these namespaces will ever be reported on, even if they are added to the `remoteEndpoints.namespaces`.
 

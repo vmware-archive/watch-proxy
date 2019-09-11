@@ -140,6 +140,7 @@ func watchConfiguration(ics kubecluster.InformerClients, fileChange chan bool,
 		if len(qmConfig.NewResources) > 0 {
 			addedIcs := kubecluster.StartWatchers(clientset, vsClientset, qmConfig, processor.Queue)
 			processor.SetPruneFields(qmConfig.NewResources)
+			processor.SetFilterEvents(qmConfig.NewResources)
 			emitter.SetAssetIds(qmConfig.NewResources)
 			for _, addedIc := range addedIcs {
 				ics = append(ics, addedIc)
