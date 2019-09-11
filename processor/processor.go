@@ -36,9 +36,11 @@ import (
 const processWaitTime = 100 * time.Millisecond
 
 var (
-	Queue           workqueue.RateLimitingInterface
-	PruneFields     map[string][]string
-	PruneFieldsLock sync.RWMutex
+	Queue            workqueue.RateLimitingInterface
+	PruneFields      map[string][]string
+	PruneFieldsLock  sync.RWMutex
+	FilterEvents     map[string][]string
+	FilterEventsLock sync.RWMutex
 )
 
 // StartProcessor starts the go routine responsible for checking to see if there are events from
@@ -46,6 +48,10 @@ var (
 func StartProcessor(resources []config.Resource) {
 	PruneFieldsLock = sync.RWMutex{}
 	SetPruneFields(resources)
+
+	FilterEventsLock = sync.RWMutex{}
+	SetFilterEvents(resources)
+
 	glog.Infoln("started processor for reading events off queue")
 	go runProcessor()
 }
@@ -126,14 +132,25 @@ func process(key string) error {
 		return err
 	}
 
+	event := strings.Split(key, "|")[0]
+	resource := strings.Split(key, "|")[2]
+
+	// check to see if the event is in the filterEvents for this resource; if so, do nothing.
+	for _, e := range FilterEvents[resource] {
+		if e == event {
+			glog.Infof("[%s]: not emitting, event %s filtered out", obj.Key, event)
+			return nil
+		}
+	}
+
 	// check whether object was previously emitted in exact state; if so, do nothing.
 	// however if the event was a delete it should still be emitted.
-	event := strings.Split(key, "|")[0]
 	if emitter.WasEmitted(*obj) && event != "delete" {
 		glog.Infof("[%s]: not emitting, state has not changed since last event",
 			obj.Key)
 		return nil
 	}
+
 	glog.Infof("[%s]: queued to emit", obj.Key)
 	emitter.EmitQueue <- *obj
 
@@ -303,4 +320,18 @@ func SetPruneFields(resources []config.Resource) {
 	PruneFields = newResourceMap
 	PruneFieldsLock.Unlock()
 	glog.Infof("fields to prune loaded as: %s", PruneFields)
+}
+
+// SetFilterEvents accepts a config.Resource that will be used to determine the events that should
+// be filtered out.
+func SetFilterEvents(resources []config.Resource) {
+	FilterEventsLock.Lock()
+	newResourceMap := map[string][]string{}
+	for _, resource := range resources {
+		newResourceMap[resource.Name] = resource.FilterEvents
+	}
+
+	FilterEvents = newResourceMap
+	FilterEventsLock.Unlock()
+	glog.Infof("events to filter out loaded as: %s", FilterEvents)
 }

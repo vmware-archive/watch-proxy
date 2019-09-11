@@ -49,4 +49,8 @@ data:
       - metadata.generation
       - metadata.annotations
       - status.observedGeneration
+    - name: nodes
+      assetId: no
+      filterEvents:
+      - update
 

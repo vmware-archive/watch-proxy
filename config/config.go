@@ -44,9 +44,10 @@ type Config struct {
 }
 
 type Resource struct {
-	Name        string   `yaml:"name"`
-	AssetId     string   `yaml:"assetId"`
-	PruneFields []string `yaml:"pruneFields"`
+	Name         string   `yaml:"name"`
+	AssetId      string   `yaml:"assetId"`
+	PruneFields  []string `yaml:"pruneFields"`
+	FilterEvents []string `yaml:"filterEvents"`
 }
 
 type RemoteEndpoint struct {

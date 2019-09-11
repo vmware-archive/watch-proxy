@@ -417,7 +417,7 @@ func lookupAssetId(resource string) string {
 	return fields
 }
 
-// SetPruneFields accepts a config.Resource that will be used to determine the assetIds that will
+// SetAssetIds accepts a config.Resource that will be used to determine the assetIds that will
 // need to be included when emitting objects.
 func SetAssetIds(resources []config.Resource) {
 	AssetIdLock.Lock()
