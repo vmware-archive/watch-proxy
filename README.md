@@ -1,8 +1,8 @@
-# Quartermaster
+# Watch-Proxy
 
-Quartermaster sits in your Kubernetes cluster and watches resources you care about, then tells you when they are created, changed or deleted.
+Watch-Proxy sits in your Kubernetes cluster and watches resources you care about, then tells you when they are created, changed or deleted.
 
-You tell Quartermaster via a configmap which resources you care about, e.g. namespaces and deployments.  Quartermaster watches those resources and, when an event occurs, it sends a POST request with a JSON payload to a REST API endpoint that you give it.  You can also provide more than one API endpoint and only report on specific namespaces to particular API endpoints.
+You tell Watch-Proxy via a configmap which resources you care about, e.g. namespaces and deployments.  Watch-Proxy watches those resources and, when an event occurs, it sends a POST request with a JSON payload to a REST API endpoint that you give it.  You can also provide more than one API endpoint and only report on specific namespaces to particular API endpoints.
 
 ## Install
 
@@ -16,9 +16,9 @@ Edit example manifests:
 
 1. Add your image name to `examples/quartermaster-deploy.yaml`.
 2. Configure as needed `examples/quartermaster-config.yaml`.  See Configuration section below.
-3. If using basic auth at the remote endpoint/s that Quartermaster is reporting to, add username and password credentials to `examples/quartermaster-secrets.yaml`.  Refer to [Kubernetes secret docs](https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually) for instructions.  If not using basic auth, remove the `env` definitions in `examples/quartermaster-deploy.yaml`
+3. If using basic auth at the remote endpoint/s that Watch-Proxy is reporting to, add username and password credentials to `examples/quartermaster-secrets.yaml`.  Refer to [Kubernetes secret docs](https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually) for instructions.  If not using basic auth, remove the `env` definitions in `examples/quartermaster-deploy.yaml`
 
-Deploy Quartermaster:
+Deploy Watch-Proxy:
 
     $ kubectl apply -f examples/quartermaster-rbac.yaml
     $ kubectl apply -f examples/quartermaster-config.yaml
@@ -26,7 +26,7 @@ Deploy Quartermaster:
 
 ## Testing
 
-If you would like to see the payload that is being sent by Quartermaster for testing and development purposes:
+If you would like to see the payload that is being sent by Watch-Proxy for testing and development purposes:
 
 1. Deploy the echo pod:
 
@@ -39,15 +39,15 @@ If you would like to see the payload that is being sent by Quartermaster for tes
 
 ## Configuration
 
-Configuration for Quartermaster is done via a config file, which, when deployed to kubernetes should take the form of a configmap. An example can be seen in the [examples](examples) dir.
+Configuration for Watch-Proxy is done via a config file, which, when deployed to kubernetes should take the form of a configmap. An example can be seen in the [examples](examples) dir.
 
 ### Config file options
 
-* `clusterName` Name of the cluster Quartermaster is deployed to.  This is an arbitrary value but should be meaninfgul to the endpoint that is processing the payload, especially when it is receiving reports from multiple clusters.
-* `emitCacheDuration` Amount of time quatermaster should remember it previously emitted an object and that object's state at the given time. Specified with seconds (s), minutes (m), or hours (h).
+* `clusterName` Name of the cluster Watch-Proxy is deployed to.  This is an arbitrary value but should be meaninfgul to the endpoint that is processing the payload, especially when it is receiving reports from multiple clusters.
+* `emitCacheDuration` Amount of time Watch-Proxy should remember it previously emitted an object and that object's state at the given time. Specified with seconds (s), minutes (m), or hours (h).
 * `emitBatchMaxObjects` Maximum number of objects to be sent in a single request.  If not defined, default is 10.
 * `emitInterval` Amount of time in seconds that the emissions processor sleeps between sending batches of objects.  When emissions are processed, the number of objects sent is limited by `emitBatchMaxObjects`.  Be aware that if you set `emitBatchMaxObjects` to low and the `emitInterval` too long, it may delay the reporting of changes to resources.  If not defined, default is 1s.
-* `forceReuploadDuration` Amount of time quartermaster should wait before attempting to re-process all objects inside of kubernetes. If state of object during re-upload hasn't changed since last emit (meaning quartermaster still has a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
+* `forceReuploadDuration` Amount of time Watch-Proxy should wait before attempting to re-process all objects inside of kubernetes. If state of object during re-upload hasn't changed since last emit (meaning Watch-Proxy still has a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
 * `prometheusMetrics` Configuration for exposing prometheus metrics:
     - `port` The port to expose the metrics on.  This value must be supplied to activate prometheus metrics.  Supply a string or int with a valid port number.
     - `path` The path at which to expose metrics.  Supply a string including the leading forward slash.  If not defined will default to "/metrics".
@@ -58,12 +58,12 @@ Configuration for Quartermaster is done via a config file, which, when deployed 
     - `type` The type of endpoint.  The following are supported:
         * `http` An HTTP or HTTPS REST API endpoint.
         * `sqs` An AWS [Simple Queue Service](https://aws.amazon.com/sqs/) endpoint.
-    - `url` A standard URL that Quartermaster can reach, e.g. https://myendpoint/quartermaster
+    - `url` A standard URL that Watch-Proxy can reach, e.g. https://myendpoint/quartermaster
     - `usernameVar` A basic auth username used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
     - `passwordVar` A basic auth password used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
     - `namespaces` An array of namespaces to report on.  If specified, only resources in the configured namespaces will be included in the payload.  If this option is not configured, all resources from all namespaces will be reported.
 * `metadata` Arbitrary key-value pairs that will be added to the root of every payload.
-* `resources` An array of Kubernetes resources that Quartermaster should watch.  The following can be defined for each resource:
+* `resources` An array of Kubernetes resources that Watch-Proxy should watch.  The following can be defined for each resource:
     - `name` The name of the resource.  The following resources are supported:
         * Kubernetes:
             - `nodes`
