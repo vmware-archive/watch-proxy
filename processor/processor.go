@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/heptio/quartermaster/config"
-	"github.com/heptio/quartermaster/emitter"
-	"github.com/heptio/quartermaster/kubecluster"
-	"github.com/heptio/quartermaster/metrics"
+	"github.com/vmware-tanzu-private/quartermaster/config"
+	"github.com/vmware-tanzu-private/quartermaster/emitter"
+	"github.com/vmware-tanzu-private/quartermaster/kubecluster"
+	"github.com/vmware-tanzu-private/quartermaster/metrics"
 	"k8s.io/client-go/util/workqueue"
 )
 

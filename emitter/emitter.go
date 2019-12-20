@@ -23,8 +23,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/golang/glog"
-	"github.com/heptio/quartermaster/config"
-	"github.com/heptio/quartermaster/metrics"
+	"github.com/vmware-tanzu-private/quartermaster/config"
+	"github.com/vmware-tanzu-private/quartermaster/metrics"
 	"github.com/patrickmn/go-cache"
 )
 

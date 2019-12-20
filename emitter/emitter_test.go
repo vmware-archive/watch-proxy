@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/heptio/quartermaster/config"
+	"github.com/vmware-tanzu-private/quartermaster/config"
 )
 
 func TestEmitChanges(t *testing.T) {

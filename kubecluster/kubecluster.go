@@ -14,8 +14,8 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/heptio/quartermaster/config"
-	"github.com/heptio/quartermaster/inventory"
+	"github.com/vmware-tanzu-private/quartermaster/config"
+	"github.com/vmware-tanzu-private/quartermaster/inventory"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

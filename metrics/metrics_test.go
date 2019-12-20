@@ -6,7 +6,7 @@ package metrics
 import (
 	"testing"
 
-	"github.com/heptio/quartermaster/config"
+	"github.com/vmware-tanzu-private/quartermaster/config"
 )
 
 func TestBadPort(t *testing.T) {
