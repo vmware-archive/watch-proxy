@@ -8,7 +8,6 @@ import (
 	"crypto/sha1"
 	"encoding/gob"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -52,6 +51,7 @@ type Emission struct {
 	Username      string
 	Password      string
 	Namespaces    []string
+	Types         []string
 	EmittableList []EmitObject
 }
 
@@ -196,6 +196,7 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 		emission.EmitType = endpoint.Type
 		emission.Client = http.Client{Timeout: time.Second * 5}
 		emission.Namespaces = endpoint.Namespaces
+		emission.Types = endpoint.ResourceTypes
 
 		switch endpoint.Type {
 		case "sqs":
@@ -273,12 +274,17 @@ func emitWhenReady(emissions []Emission, c config.Config) {
 		for i := 0; i < maxBatch; i++ {
 			o := <-EmitQueue
 			for ei, emission := range emissions {
-				emit, err := filterByNamespace(emission.Namespaces, o)
+				emitN, err := filter(emission.Namespaces, o)
 				if err != nil {
 					glog.Errorf("failed to filter by namespace. error: %s", err)
 				}
 
-				if emit == true {
+				emitT, err := filter(emission.Types, o)
+				if err != nil {
+					glog.Errorf("failed to filter by type. error: %s", err)
+				}
+
+				if emitN == true && emitT == true {
 					emissions[ei].EmittableList = append(emission.EmittableList, o)
 				}
 			}
@@ -288,12 +294,17 @@ func emitWhenReady(emissions []Emission, c config.Config) {
 		for len(EmitQueue) > 0 {
 			o := <-EmitQueue
 			for ei, emission := range emissions {
-				emit, err := filterByNamespace(emission.Namespaces, o)
+				emitN, err := filter(emission.Namespaces, o)
 				if err != nil {
 					glog.Errorf("failed to filter by namespace. error: %s", err)
 				}
 
-				if emit == true {
+				emitT, err := filter(emission.Types, o)
+				if err != nil {
+					glog.Errorf("failed to filter by type. error: %s", err)
+				}
+
+				if emitN == true && emitT == true {
 					emissions[ei].EmittableList = append(emission.EmittableList, o)
 				}
 			}
@@ -423,26 +434,22 @@ func SetAssetIds(resources []config.Resource) {
 	glog.Infof("assetIds loaded as: %s", AssetIds)
 }
 
-// filterByNamespace examines a remoteEndpoint's configured namespaces and the namespace
+// filter examines a remoteEndpoint's configured filters and the selfLink
 // of the object to be emitted and determines if the remoteEndpoint should get
 // the object update sent to it
-func filterByNamespace(namespaces []string, o EmitObject) (bool, error) {
-	// by default if a remote endpoint has no namespaces defined, it will get all
-	if len(namespaces) == 0 {
+func filter(list []string, o EmitObject) (bool, error) {
+	// by default if a remote endpoint has no list defined, it will get all
+	if len(list) == 0 {
 		return true, nil
 	}
 
+	// Example selfLink: "/apis/extensions/v1beta1/namespace/heptio-qm/deployments/quartermaster"
+	// selfLink: /api/v1/namespace/heptio-qm/services/status-aggregator
 	metadata := o.Payload["metadata"].(map[string]interface{})
 	selfLink := metadata["selfLink"].(string)
-	objectNamespace := strings.Split(selfLink, "/")[4]
 
-	if objectNamespace == "" {
-		err := errors.New("unable to extract namespace from object's selflink value")
-		return false, err
-	}
-
-	for _, n := range namespaces {
-		if n == objectNamespace {
+	for _, n := range list {
+		if strings.Contains(selfLink, fmt.Sprintf("/%s/", n)) {
 			return true, nil
 		}
 	}
