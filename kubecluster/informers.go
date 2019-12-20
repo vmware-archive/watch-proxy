@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/heptio/quartermaster/config"
+	"github.com/vmware-tanzu-private/quartermaster/config"
 	apps_v1 "k8s.io/api/apps/v1"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1beta1 "k8s.io/api/networking/v1beta1"

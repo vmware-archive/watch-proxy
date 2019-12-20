@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	"github.com/heptio/quartermaster/config"
+	"github.com/vmware-tanzu-private/quartermaster/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
