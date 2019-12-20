@@ -1,0 +1,46 @@
+module github.com/vmware-tanzu-private/quartermaster
+
+go 1.13
+
+require (
+	github.com/aws/aws-sdk-go v1.13.33
+	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
+	github.com/davecgh/go-spew v1.1.1
+	github.com/go-ini/ini v1.36.0
+	github.com/gogo/protobuf v1.3.1
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/protobuf v1.3.2
+	github.com/google/go-cmp v0.3.1
+	github.com/google/gofuzz v1.0.0
+	github.com/googleapis/gnostic v0.1.0
+	github.com/hashicorp/golang-lru v0.5.1
+	github.com/imdario/mergo v0.3.5
+	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8
+	github.com/json-iterator/go v1.1.8
+	github.com/matttproud/golang_protobuf_extensions v1.0.1
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+	github.com/modern-go/reflect2 v1.0.1
+	github.com/oklog/ulid v0.3.0
+	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
+	github.com/prometheus/client_golang v0.9.2
+	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
+	github.com/prometheus/common v0.2.0
+	github.com/prometheus/procfs v0.0.0-20190225181712-6ed1f7e10411
+	github.com/spf13/pflag v1.0.5
+	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
+	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
+	golang.org/x/sys v0.0.0-20190826190057-c7b8b68b1456
+	golang.org/x/text v0.3.2
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+	google.golang.org/appengine v1.6.5
+	gopkg.in/inf.v0 v0.9.1
+	gopkg.in/yaml.v2 v2.2.4
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.17.0
+	k8s.io/client-go v0.0.0-20191016111102-bec269661e48
+	k8s.io/klog v1.0.0
+	k8s.io/utils v0.0.0-20191218082557-f07c713de883
+	sigs.k8s.io/yaml v1.1.0
+)
