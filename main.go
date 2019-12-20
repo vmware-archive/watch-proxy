@@ -1,4 +1,4 @@
-// Copyright 2018-2019 VMware, Inc. 
+// Copyright 2018-2019 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package main
@@ -16,7 +16,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/heptio/quartermaster/config"
-	vs_clientset "github.com/heptio/quartermaster/custom/client/clientset/versioned"
 	"github.com/heptio/quartermaster/emitter"
 	"github.com/heptio/quartermaster/kubecluster"
 	"github.com/heptio/quartermaster/metrics"
@@ -35,7 +34,7 @@ func main() {
 	glog.Infoln("starting quartermaster")
 
 	// create clients for kubernetes resources and virtualservice resources
-	clientset, vsClientset, err := kubecluster.NewK8sClient(kubeconfigPath)
+	clientset, err := kubecluster.NewK8sClient(kubeconfigPath)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -65,14 +64,14 @@ func main() {
 	emitter.StartEmitter(qmConfig, make(chan emitter.EmitObject, 1000))
 
 	// start all k8s object watchers
-	ics := kubecluster.StartWatchers(clientset, vsClientset, qmConfig, processor.Queue)
+	ics := kubecluster.StartWatchers(clientset, qmConfig, processor.Queue)
 
 	// watch for changes to the config file and and adjust watchers if there are changes
 	fileChange := make(chan bool)
 	config.NewFileWatcher(fileChange, configFile)
 
 	// start the loop that reloads the configuration and starts or stops
-	watchConfiguration(ics, fileChange, qmConfig, clientset, vsClientset)
+	watchConfiguration(ics, fileChange, qmConfig, clientset)
 
 	// create channel to watch for SIGNALs to exit
 	signalChan := make(chan os.Signal, 1)
@@ -98,8 +97,7 @@ func parseFlags() {
 }
 
 func watchConfiguration(ics kubecluster.InformerClients, fileChange chan bool,
-	qmConfig config.Config, clientset *kubernetes.Clientset,
-	vsClientset *vs_clientset.Clientset) {
+	qmConfig config.Config, clientset *kubernetes.Clientset) {
 	for {
 		<-fileChange
 		glog.Infof("config file change detected")
@@ -127,7 +125,7 @@ func watchConfiguration(ics kubecluster.InformerClients, fileChange chan bool,
 
 		// start new watchers
 		if len(qmConfig.NewResources) > 0 {
-			addedIcs := kubecluster.StartWatchers(clientset, vsClientset, qmConfig, processor.Queue)
+			addedIcs := kubecluster.StartWatchers(clientset, qmConfig, processor.Queue)
 			processor.SetPruneFields(qmConfig.NewResources)
 			processor.SetFilterEvents(qmConfig.NewResources)
 			emitter.SetAssetIds(qmConfig.NewResources)

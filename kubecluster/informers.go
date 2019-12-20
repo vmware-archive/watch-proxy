@@ -1,4 +1,4 @@
-// Copyright 2018-2019 VMware, Inc. 
+// Copyright 2018-2019 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package kubecluster
@@ -11,18 +11,15 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/heptio/quartermaster/config"
-	istio_v1alpha3 "github.com/heptio/quartermaster/custom/apis/virtualservice/v1alpha3"
-	vs_client "github.com/heptio/quartermaster/custom/client/clientset/versioned"
-	lister_istio_v1alpha3 "github.com/heptio/quartermaster/custom/client/listers/virtualservice/v1alpha3"
-	apps_v1beta1 "k8s.io/api/apps/v1beta1"
-	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	apps_v1 "k8s.io/api/apps/v1"
+	core_v1 "k8s.io/api/core/v1"
+	networking_v1beta1 "k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	lister_apps_v1beta1 "k8s.io/client-go/listers/apps/v1beta1"
-	lister_v1 "k8s.io/client-go/listers/core/v1"
-	lister_v1beta1 "k8s.io/client-go/listers/extensions/v1beta1"
+	lister_apps_v1 "k8s.io/client-go/listers/apps/v1"
+	lister_core_v1 "k8s.io/client-go/listers/core/v1"
+	lister_networking_v1beta1 "k8s.io/client-go/listers/networking/v1beta1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -36,16 +33,15 @@ const (
 
 // Listers which hold cached k8s objects for later lookup
 var (
-	NsLister     lister_v1.NamespaceLister
-	PoLister     lister_v1.PodLister
-	NoLister     lister_v1.NodeLister
-	CmLister     lister_v1.ConfigMapLister
-	SvcLister    lister_v1.ServiceLister
-	SecretLister lister_v1.SecretLister
-	DeployLister lister_apps_v1beta1.DeploymentLister
-	RsLister     lister_v1beta1.ReplicaSetLister
-	IngLister    lister_v1beta1.IngressLister
-	VsLister     lister_istio_v1alpha3.VirtualServiceLister
+	NsLister     lister_core_v1.NamespaceLister
+	PoLister     lister_core_v1.PodLister
+	NoLister     lister_core_v1.NodeLister
+	CmLister     lister_core_v1.ConfigMapLister
+	SvcLister    lister_core_v1.ServiceLister
+	SecretLister lister_core_v1.SecretLister
+	DeployLister lister_apps_v1.DeploymentLister
+	RsLister     lister_apps_v1.ReplicaSetLister
+	IngLister    lister_networking_v1beta1.IngressLister
 )
 
 // Informer is capable of starting and stopping an running informer.
@@ -85,9 +81,9 @@ type InformerClients []*InformerClient
 // * nsSelector: scopes the informer to only watch objects in a specific namespace. An empty string
 //               represents all namespaces.
 // * pQueue: processor queue where all events should be dropped for future processing.
-func NewInformerClient(client *kubernetes.Clientset, vsClient *vs_client.Clientset, resource string, nsSelector string,
+func NewInformerClient(client *kubernetes.Clientset, resource string, nsSelector string,
 	pQueue workqueue.RateLimitingInterface, config config.Config) (*InformerClient, error) {
-	r, obj, err := getRuntimeObjectConfig(client, vsClient, resource)
+	r, obj, err := getRuntimeObjectConfig(client, resource)
 
 	if err != nil {
 		return nil, err
@@ -249,43 +245,39 @@ func RemoveInformerClient(ics InformerClients, removeIc *InformerClient) Informe
 
 // getRuntimeObjectConfig returns the appropriate rest client and runtime object type based on the
 // resource argument. the kubernetes.Clientset argument is used to construct the rest client.
-func getRuntimeObjectConfig(client *kubernetes.Clientset, vsClient *vs_client.Clientset,
-	resource string) (*rest.Interface, runtime.Object, error) {
+func getRuntimeObjectConfig(client *kubernetes.Clientset, resource string) (*rest.Interface, runtime.Object, error) {
 
 	var rest rest.Interface
 	var obj runtime.Object
 
 	switch resource {
 	case "namespaces":
-		rest = client.Core().RESTClient()
-		obj = &v1.Namespace{}
+		rest = client.CoreV1().RESTClient()
+		obj = &core_v1.Namespace{}
 	case "pods":
-		rest = client.Core().RESTClient()
-		obj = &v1.Pod{}
+		rest = client.CoreV1().RESTClient()
+		obj = &core_v1.Pod{}
 	case "nodes":
-		rest = client.Core().RESTClient()
-		obj = &v1.Node{}
+		rest = client.CoreV1().RESTClient()
+		obj = &core_v1.Node{}
 	case "configmaps":
-		rest = client.Core().RESTClient()
-		obj = &v1.ConfigMap{}
+		rest = client.CoreV1().RESTClient()
+		obj = &core_v1.ConfigMap{}
 	case "secrets":
-		rest = client.Core().RESTClient()
-		obj = &v1.Secret{}
+		rest = client.CoreV1().RESTClient()
+		obj = &core_v1.Secret{}
 	case "services":
-		rest = client.Core().RESTClient()
-		obj = &v1.Service{}
+		rest = client.CoreV1().RESTClient()
+		obj = &core_v1.Service{}
 	case "ingresses":
-		rest = client.Extensions().RESTClient()
-		obj = &v1beta1.Ingress{}
+		rest = client.NetworkingV1beta1().RESTClient()
+		obj = &networking_v1beta1.Ingress{}
 	case "deployments":
-		rest = client.AppsV1beta1().RESTClient()
-		obj = &apps_v1beta1.Deployment{}
+		rest = client.AppsV1().RESTClient()
+		obj = &apps_v1.Deployment{}
 	case "replicasets":
-		rest = client.ExtensionsV1beta1().RESTClient()
-		obj = &v1beta1.ReplicaSet{}
-	case "virtualservices":
-		rest = vsClient.VirtualserviceV1alpha3().RESTClient()
-		obj = &istio_v1alpha3.VirtualService{}
+		rest = client.AppsV1().RESTClient()
+		obj = &apps_v1.ReplicaSet{}
 	default:
 		return nil, nil, fmt.Errorf("object type requested is not recognized. type: %s", resource)
 	}
@@ -300,29 +292,26 @@ func getRuntimeObjectConfig(client *kubernetes.Clientset, vsClient *vs_client.Cl
 // eventually be emitted.
 func initLister(i cache.Indexer, objType interface{}) error {
 	switch t := objType.(type) {
-	case *v1.Namespace:
-		NsLister = lister_v1.NewNamespaceLister(i)
-	case *v1.Pod:
-		PoLister = lister_v1.NewPodLister(i)
-	case *v1.Node:
-		NoLister = lister_v1.NewNodeLister(i)
-	case *v1.ConfigMap:
-		CmLister = lister_v1.NewConfigMapLister(i)
-	case *v1.Service:
-		SvcLister = lister_v1.NewServiceLister(i)
-	case *v1beta1.Ingress:
-		IngLister = lister_v1beta1.NewIngressLister(i)
-	case *v1.Secret:
-		SecretLister = lister_v1.NewSecretLister(i)
-	case *apps_v1beta1.Deployment:
-		DeployLister = lister_apps_v1beta1.NewDeploymentLister(i)
-	case *v1beta1.ReplicaSet:
-		RsLister = lister_v1beta1.NewReplicaSetLister(i)
-	case *istio_v1alpha3.VirtualService:
-		VsLister = lister_istio_v1alpha3.NewVirtualServiceLister(i)
+	case *core_v1.Namespace:
+		NsLister = lister_core_v1.NewNamespaceLister(i)
+	case *core_v1.Pod:
+		PoLister = lister_core_v1.NewPodLister(i)
+	case *core_v1.Node:
+		NoLister = lister_core_v1.NewNodeLister(i)
+	case *core_v1.ConfigMap:
+		CmLister = lister_core_v1.NewConfigMapLister(i)
+	case *core_v1.Service:
+		SvcLister = lister_core_v1.NewServiceLister(i)
+	case *networking_v1beta1.Ingress:
+		IngLister = lister_networking_v1beta1.NewIngressLister(i)
+	case *core_v1.Secret:
+		SecretLister = lister_core_v1.NewSecretLister(i)
+	case *apps_v1.Deployment:
+		DeployLister = lister_apps_v1.NewDeploymentLister(i)
+	case *apps_v1.ReplicaSet:
+		RsLister = lister_apps_v1.NewReplicaSetLister(i)
 	default:
-		return fmt.Errorf("Failed to init lister due to inability to infer type. Type was %s",
-			t)
+		return fmt.Errorf("Failed to init lister due to inability to infer type. Type was %s", t)
 	}
 	return nil
 }

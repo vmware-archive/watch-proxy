@@ -1,4 +1,4 @@
-// Copyright 2018-2019 VMware, Inc. 
+// Copyright 2018-2019 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 // Package processor implements the logic for reading queued events that come from configured
@@ -219,13 +219,6 @@ func getK8sObject(key string) (*emitter.EmitObject, error) {
 			return nil, fmt.Errorf("k8s object key was invalid, couldn't lookup in lister.")
 		}
 		obj, _ = kubecluster.SecretLister.Secrets(lookupKey[0]).Get(lookupKey[1])
-
-	case "virtualservices":
-		lookupKey := strings.Split(objType[1], "/")
-		if len(lookupKey) < 2 {
-			return nil, fmt.Errorf("k8s object key was invalid, couldn't lookup in lister.")
-		}
-		obj, _ = kubecluster.VsLister.VirtualServices(lookupKey[0]).Get(lookupKey[1])
 
 	default:
 		return nil, fmt.Errorf("k8s object type is unknown. type was: %s", objType[0])
