@@ -187,6 +187,9 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 	SetAssetIds(c.ResourcesWatch)
 	EmitQueue = q
 	metadata = c.Metadata
+	if c.ClusterName != "" {
+		metadata["cluster"] = c.ClusterName
+	}
 
 	for _, endpoint := range c.Endpoints {
 		emission := Emission{}
