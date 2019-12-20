@@ -5,7 +5,9 @@ all: deps
 	go build
 
 deps: ## Install/Update depdendencies
-	dep ensure -v
+	go mod verify
+	go mod tidy
+	go mod vendor
 
 test: ## Run tests
 	go test ./config ./emitter ./metrics -v
