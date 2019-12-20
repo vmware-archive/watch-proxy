@@ -40,12 +40,13 @@ type Resource struct {
 }
 
 type RemoteEndpoint struct {
-	Type        string   `yaml:"type"`
-	Region      string   `yaml:"region"`
-	Url         string   `yaml:"url"`
-	Namespaces  []string `yaml:"namespaces"`
-	UsernameVar string   `yaml:"usernameVar"`
-	PasswordVar string   `yaml:"passwordVar"`
+	Type          string   `yaml:"type"`
+	Region        string   `yaml:"region"`
+	Url           string   `yaml:"url"`
+	Namespaces    []string `yaml:"namespaces"`
+	ResourceTypes []string `yaml:"resourceTypes"`
+	UsernameVar   string   `yaml:"usernameVar"`
+	PasswordVar   string   `yaml:"passwordVar"`
 }
 
 type PrometheusConfig struct {

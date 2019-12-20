@@ -27,6 +27,9 @@ data:
       passwordVar: PASSWORD1
       namespaces:
       - heptio-qm
+      # Resource types must be defined as in spec.names.plural of the resource you want to watch
+      resourceTypes:
+      - services
     - type: http
       url: http://echo2/quartermaster
       usernameVar: USERNAME2
