@@ -4,6 +4,10 @@ Quartermaster sits in your Kubernetes cluster and watches resources you care abo
 
 You tell Quartermaster via a configmap which resources you care about, e.g. namespaces and deployments.  Quartermaster watches those resources and, when an event occurs, it sends a POST request with a JSON payload to a REST API endpoint that you give it.  You can also provide more than one API endpoint and only report on specific namespaces to particular API endpoints.
 
+## Prerequisites
+
+- Kubernetes v1.9
+
 ## Install
 
 Build and push a docker image:
@@ -75,8 +79,6 @@ Configuration for Quartermaster is done via a config file, which, when deployed 
             - `replicasets`
             - `configmaps`
             - `secrets`
-        * Istio:
-            - `virtualservices`
     - `assetId` An arbitrary string that can be used by the remote endpoint to help differentiate resources.
     - `pruneFields` Fields to remove from payload. Used to remove useless or sensitive data that you don't wish to send.
     - `filterEvents` An array of events to ignore.  The three events are `add`, `update` and `delete`.  If you don't need to get notified of any of the three events, include here.

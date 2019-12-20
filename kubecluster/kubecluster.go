@@ -1,4 +1,4 @@
-// Copyright 2018-2019 VMware, Inc. 
+// Copyright 2018-2019 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package kubecluster
@@ -15,7 +15,6 @@ import (
 	"github.com/pborman/uuid"
 
 	"github.com/heptio/quartermaster/config"
-	vs_clientset "github.com/heptio/quartermaster/custom/client/clientset/versioned"
 	"github.com/heptio/quartermaster/inventory"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +33,7 @@ var (
 // described in the config. It expects a kubernetes client for which rest clients will be derived,
 // the configuration of quartermaster, and a processing queue where all objects that triggered
 // events will be stored.
-func StartWatchers(client *kubernetes.Clientset, vsClient *vs_clientset.Clientset, c config.Config,
+func StartWatchers(client *kubernetes.Clientset, c config.Config,
 	processorQueue workqueue.RateLimitingInterface) InformerClients {
 	// loop through list of resources to watch and startup watchers
 	// for those resources.
@@ -52,7 +51,7 @@ func StartWatchers(client *kubernetes.Clientset, vsClient *vs_clientset.Clientse
 
 	// start the watchers
 	for _, resource := range resources {
-		ic, err := NewInformerClient(client, vsClient, resource.Name, "", processorQueue, c)
+		ic, err := NewInformerClient(client, resource.Name, "", processorQueue, c)
 
 		if err != nil {
 			glog.Errorf("failure to create client to listen for %s objects. They will not be "+
