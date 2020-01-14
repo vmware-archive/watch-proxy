@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: heptio-qm
+  name: tanzu-watch-proxy
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: quartermaster-controller
+  name: watch-proxy-controller
 rules:
 - apiGroups:
   - "*"
@@ -20,18 +20,18 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: quartermaster-controller
+  name: watch-proxy-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: quartermaster-controller
+  name: watch-proxy-controller
 subjects:
 - kind: ServiceAccount
-  name: quartermaster-controller
-  namespace: heptio-qm
+  name: watch-proxy-controller
+  namespace: tanzu-watch-proxy
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: quartermaster-controller
-  namespace: heptio-qm
+  name: watch-proxy-controller
+  namespace: tanzu-watch-proxy

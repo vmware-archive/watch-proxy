@@ -12,21 +12,21 @@ You tell Watch-Proxy via a configmap which resources you care about, e.g. namesp
 
 Build and push a docker image:
 
-    $ export PREFIX=[your image repo]  # e.g. quay.io/myrepo/quartermaster
+    $ export PREFIX=[your image repo]  # e.g. gcr.io/myrepo/watch-proxy
     $ export TAG=[version no.]  # e.g. 0.14
     $ make release
 
 Edit example manifests:
 
-1. Add your image name to `examples/quartermaster-deploy.yaml`.
-2. Configure as needed `examples/quartermaster-config.yaml`.  See Configuration section below.
-3. If using basic auth at the remote endpoint/s that Watch-Proxy is reporting to, add username and password credentials to `examples/quartermaster-secrets.yaml`.  Refer to [Kubernetes secret docs](https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually) for instructions.  If not using basic auth, remove the `env` definitions in `examples/quartermaster-deploy.yaml`
+1. Add your image name to `examples/watch-proxy-deploy.yaml`.
+2. Configure as needed `examples/watch-proxy-config.yaml`.  See Configuration section below.
+3. If using basic auth at the remote endpoint/s that Watch-Proxy is reporting to, add username and password credentials to `examples/watch-proxy-secrets.yaml`.  Refer to [Kubernetes secret docs](https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually) for instructions.  If not using basic auth, remove the `env` definitions in `examples/watch-proxy-deploy.yaml`
 
 Deploy Watch-Proxy:
 
-    $ kubectl apply -f examples/quartermaster-rbac.yaml
-    $ kubectl apply -f examples/quartermaster-config.yaml
-    $ kubectl apply -f examples/quartermaster-deploy.yaml
+    $ kubectl apply -f examples/watch-proxy-rbac.yaml
+    $ kubectl apply -f examples/watch-proxy-config.yaml
+    $ kubectl apply -f examples/watch-proxy-deploy.yaml
 
 ## Testing
 
@@ -36,10 +36,10 @@ If you would like to see the payload that is being sent by Watch-Proxy for testi
 
         $ kubectl apply -f examples/echo.yaml
 
-2. Configure one of the `remoteEndpoints` in `examples/quartermaster-config.yaml` to use `url: http://echo/quartermaster`.
+2. Configure one of the `remoteEndpoints` in `examples/watch-proxy-config.yaml` to use `url: http://echo/watch-proxy`.
 3. View the echo logs:
 
-        $ kubectl logs -n heptio-qm echo
+        $ kubectl logs -n tanzu-watch-proxy echo
 
 ## Configuration
 
@@ -62,7 +62,7 @@ Configuration for Watch-Proxy is done via a config file, which, when deployed to
     - `type` The type of endpoint.  The following are supported:
         * `http` An HTTP or HTTPS REST API endpoint.
         * `sqs` An AWS [Simple Queue Service](https://aws.amazon.com/sqs/) endpoint.
-    - `url` A standard URL that Watch-Proxy can reach, e.g. https://myendpoint/quartermaster
+    - `url` A standard URL that Watch-Proxy can reach, e.g. https://myendpoint/watch-proxy
     - `usernameVar` A basic auth username used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
     - `passwordVar` A basic auth password used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
     - `namespaces` An array of namespaces to report on.  If specified, only resources in the configured namespaces will be included in the payload.  If this option is not configured, all resources from all namespaces will be reported.
@@ -90,12 +90,12 @@ Configuration for Watch-Proxy is done via a config file, which, when deployed to
 The following are the available CLI parameters
 ```
   -c string
-    	Path to quartermaster config file (default "/etc/quartermaster/config.yaml")
+    	Path to watch-proxy config file (default "/etc/watch-proxy/config.yaml")
   -kubeconfig string
     	Path to a kubeconfig file
 ```
 
-Because Quartermaster leverages the kubernetes go-client package the following parameters are also available, however they are not specific to quartermaster itself.
+Because watch-proxy leverages the kubernetes go-client package the following parameters are also available, however they are not specific to watch-proxy itself.
 
 ```
   -alsologtostderr
@@ -127,7 +127,7 @@ test                          Run tests
 
 Dependencies are managed via [dep](https://github.com/golang/dep) and will need to installed if you choose to update the dependencies. All dependencies are commited in the `vendor` dir.
 
-To develop and test Quartermaster locally, the controller accepts a kubeconfig file to interact with a cluster. Otherwise the pod's service account would be used, which is desired for real deployment. To run against a local kubeconfig, the command would be as follows.
+To develop and test watch-proxy locally, the controller accepts a kubeconfig file to interact with a cluster. Otherwise the pod's service account would be used, which is desired for real deployment. To run against a local kubeconfig, the command would be as follows.
 
 ```bash
 make run KUBECONFIG=~/.kube/config

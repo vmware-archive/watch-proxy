@@ -1,16 +1,16 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: quartermaster
-  namespace: heptio-qm
+  name: watch-proxy
+  namespace: tanzu-watch-proxy
 data:
   config.yaml: |-
     clusterName: "dev-cluster"
     emitCacheDuration: 14400m
     emitBatchMaxObjects: 10
     emitInterval: 1
-    # Minutes quartermaster should wait before attempting to re-process all objects inside of kubernetes.
-    # If state of object during re-upload hasn't changed since last emit (meaning quartermaster still has
+    # Minutes watch-proxy should wait before attempting to re-process all objects inside of kubernetes.
+    # If state of object during re-upload hasn't changed since last emit (meaning watch-proxy still has
     # a cached record, the object will be dropped). This setting relates to client-go's resyncPeriod Setting this value
     # to 0 ensures no forced re-upload occurs. Specified with seconds (s), minutes (m), or hours (h).
     forceReuploadDuration: 500h
@@ -22,16 +22,16 @@ data:
       path: /live
     remoteEndpoints:
     - type: http
-      url: http://echo1/quartermaster
+      url: http://echo1/watch-proxy
       usernameVar: USERNAME1
       passwordVar: PASSWORD1
       namespaces:
-      - heptio-qm
+      - tanzu-watch-proxy
       # Resource types must be defined as in spec.names.plural of the resource you want to watch
       resourceTypes:
       - services
     - type: http
-      url: http://echo2/quartermaster
+      url: http://echo2/watch-proxy
       usernameVar: USERNAME2
       passwordVar: PASSWORD2
     metadata:
