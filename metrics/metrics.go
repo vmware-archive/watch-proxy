@@ -1,4 +1,4 @@
-// Copyright 2018-2019 VMware, Inc. 
+// Copyright 2018-2019 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package metrics
@@ -10,8 +10,8 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	"github.com/vmware-tanzu-private/quartermaster/config"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/vmware-tanzu/watch-proxy/config"
 )
 
 var (
@@ -19,12 +19,12 @@ var (
 	promPath string
 
 	ProcessCount = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "quartermaster_objects_processed_count",
+		Name: "watch_proxy_objects_processed_count",
 		Help: "Counter of Kubernetes objects processed by Quartermaster.",
 	})
 
 	PayloadCount = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "quartermaster_payloads_sent_count",
+		Name: "watch_proxy_payloads_sent_count",
 		Help: "Counter of payloads sent to remote endpoint by Quartermaster.",
 	})
 )

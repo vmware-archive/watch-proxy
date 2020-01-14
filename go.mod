@@ -1,4 +1,4 @@
-module github.com/vmware-tanzu-private/quartermaster
+module github.com/vmware-tanzu/watch-proxy
 
 go 1.13
 

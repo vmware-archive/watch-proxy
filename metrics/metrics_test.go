@@ -6,7 +6,7 @@ package metrics
 import (
 	"testing"
 
-	"github.com/vmware-tanzu-private/quartermaster/config"
+	"github.com/vmware-tanzu/watch-proxy/config"
 )
 
 func TestBadPort(t *testing.T) {
