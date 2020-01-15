@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: quartermaster
-  namespace: heptio-qm
+  name: watch-proxy
+  namespace: tanzu-watch-proxy
 spec:
   replicas: 1
   strategy:
@@ -10,18 +10,18 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: quartermaster
+      app: watch-proxy
   template:
     metadata:
       labels:
-        app: quartermaster
+        app: watch-proxy
     spec:
       securityContext:
         runAsUser: 10000
         fsGroup: 20000
-      serviceAccountName: quartermaster-controller
+      serviceAccountName: watch-proxy-controller
       containers:
-      - name: quartermaster
+      - name: watch-proxy
         image: your/image/name  # put your image name here
         imagePullPolicy: IfNotPresent
         resources:
@@ -43,39 +43,39 @@ spec:
         #  exec:
         #    command:
         #    - cat
-        #    - /quartermaster/healthy
+        #    - /watch-proxy/healthy
         #  initialDelaySeconds: 25
         #  periodSeconds: 15
         volumeMounts:
         - name: config-volume
-          mountPath: /etc/quartermaster
+          mountPath: /etc/watch-proxy
         - name: scratch-volume
-          mountPath: /quartermaster
+          mountPath: /watch-proxy
         env:
         - name: USERNAME1
           valueFrom:
             secretKeyRef:
-              name: quartermaster-creds-1
+              name: watch-proxy-creds-1
               key: username
         - name: PASSWORD1
           valueFrom:
             secretKeyRef:
-              name: quartermaster-creds-1
+              name: watch-proxy-creds-1
               key: password
         - name: USERNAME2
           valueFrom:
             secretKeyRef:
-              name: quartermaster-creds-2
+              name: watch-proxy-creds-2
               key: username
         - name: PASSWORD2
           valueFrom:
             secretKeyRef:
-              name: quartermaster-creds-2
+              name: watch-proxy-creds-2
               key: password
       volumes:
       - name: config-volume
         configMap:
-          name: quartermaster
+          name: watch-proxy
       - name: scratch-volume
         emptyDir: {}
 
