@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/vmware-tanzu-private/quartermaster/config"
-	"github.com/vmware-tanzu-private/quartermaster/emitter"
-	"github.com/vmware-tanzu-private/quartermaster/kubecluster"
-	"github.com/vmware-tanzu-private/quartermaster/metrics"
-	"github.com/vmware-tanzu-private/quartermaster/processor"
+	"github.com/vmware-tanzu/watch-proxy/config"
+	"github.com/vmware-tanzu/watch-proxy/emitter"
+	"github.com/vmware-tanzu/watch-proxy/kubecluster"
+	"github.com/vmware-tanzu/watch-proxy/metrics"
+	"github.com/vmware-tanzu/watch-proxy/processor"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -31,7 +31,7 @@ var (
 
 func main() {
 	parseFlags()
-	glog.Infoln("starting quartermaster")
+	glog.Infoln("starting watch-proxy")
 
 	// create clients for kubernetes resources and virtualservice resources
 	clientset, err := kubecluster.NewK8sClient(kubeconfigPath)
@@ -39,7 +39,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	// create quartermaster configuration
+	// create watch-proxy configuration
 	parsedConfig, err := config.ReadConfig(configFile)
 	if err != nil {
 		panic(err.Error())
@@ -88,8 +88,8 @@ func parseFlags() {
 	kubeconfigPath = *flag.String("kubeconfig", "",
 		"Path to a kubeconfig file")
 	configFile = *flag.String("c",
-		"/etc/quartermaster/config.yaml",
-		"Path to quartermaster config file")
+		"/etc/watch-proxy/config.yaml",
+		"Path to watch-proxy config file")
 	// We log to stderr because glog will default to logging to a file.
 	// By setting this debugging is easier via `kubectl logs`
 	flag.Set("logtostderr", "true")
@@ -157,28 +157,28 @@ func checkLiveness(qmConfig config.Config) {
 	}
 }
 
-// livenessChecker checks for the existence of the /quartermaster/processing file and
-// the age of the /quartermaster/emitting file.
-// If both checks pass it touches the /quartermaster/healthy file
+// livenessChecker checks for the existence of the /watch-proxy/processing file and
+// the age of the /watch-proxy/emitting file.
+// If both checks pass it touches the /watch-proxy/healthy file
 // which an exec livenessProbe can use to establish liveness for Quartermaster.
-// If either check fails the /quartermaster/healthy file is removed.
+// If either check fails the /watch-proxy/healthy file is removed.
 // An exec liveness probe is used here for compatibility with clusters using
 // mTLS which prevents using an HTTP probe.
 func livenessChecker(emitInterval int) {
 
-	if _, err := os.Stat("/quartermaster/processing"); os.IsNotExist(err) {
+	if _, err := os.Stat("/watch-proxy/processing"); os.IsNotExist(err) {
 		glog.Infoln("did not find processing file for liveness check")
-		err := exec.Command("rm", "/quartermaster/healthy").Run()
+		err := exec.Command("rm", "/watch-proxy/healthy").Run()
 		if err != nil {
 			glog.Infoln("no healthy file for liveness check")
 		}
 		return
 	}
 
-	info, eerr := os.Stat("/quartermaster/emitting")
+	info, eerr := os.Stat("/watch-proxy/emitting")
 	if eerr != nil {
 		glog.Infoln("did not find emitting file for liveness check")
-		err := exec.Command("rm", "/quartermaster/healthy").Run()
+		err := exec.Command("rm", "/watch-proxy/healthy").Run()
 		if err != nil {
 			glog.Infoln("no healthy file for liveness check")
 		}
@@ -190,19 +190,19 @@ func livenessChecker(emitInterval int) {
 
 	if age > time.Second*time.Duration(unhealthyAge) {
 		glog.Infof("emitting file older than %d seconds which is unhealthy", unhealthyAge)
-		err := exec.Command("rm", "/quartermaster/healthy").Run()
+		err := exec.Command("rm", "/watch-proxy/healthy").Run()
 		if err != nil {
 			glog.Infoln("no healthy file for liveness check")
 		}
 		return
 	}
 
-	herr := exec.Command("touch", "/quartermaster/healthy").Run()
+	herr := exec.Command("touch", "/watch-proxy/healthy").Run()
 	if herr != nil {
 		glog.Errorf("failed to touch healthy file for liveness check. error: %s", herr)
 	}
 
-	glog.Infoln("quartermaster healthy file touched for liveness check")
+	glog.Infoln("watch-proxy healthy file touched for liveness check")
 }
 
 func httpLiveness(qmConfig config.Config) {
@@ -220,7 +220,7 @@ func httpLiveness(qmConfig config.Config) {
 	}
 
 	http.HandleFunc(livenessPath, func(w http.ResponseWriter, r *http.Request) {
-		_, err := os.Stat("/quartermaster/healthy")
+		_, err := os.Stat("/watch-proxy/healthy")
 		if err != nil {
 			// return 503
 			w.WriteHeader(http.StatusServiceUnavailable)

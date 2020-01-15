@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/vmware-tanzu-private/quartermaster/config"
+	"github.com/vmware-tanzu/watch-proxy/config"
 	apps_v1 "k8s.io/api/apps/v1"
 	core_v1 "k8s.io/api/core/v1"
 	networking_v1beta1 "k8s.io/api/networking/v1beta1"
@@ -72,7 +72,7 @@ type InformerClients []*InformerClient
 
 // NewInformerClient returns an InformerClient capable of starting an informer to watch all events
 // a specific k8s object type. It returns an error when the request object type (specified in the
-// resource argument is not known to quartermaster. The arguments it takes are as follows.
+// resource argument is not known to watch-proxy. The arguments it takes are as follows.
 //
 // * client: kubernetes.Clientset used for generating REST clients capable for communicating with
 //           kubernetes
@@ -92,14 +92,14 @@ func NewInformerClient(client *kubernetes.Clientset, resource string, nsSelector
 	delay, err := time.ParseDuration(config.DelayStartSeconds)
 	if err != nil {
 		delay = 0 * time.Second
-		glog.Warningf("%s: no valid delayAddEventDuration, quartermaster will process all events without delay. error: %s. "+
+		glog.Warningf("%s: no valid delayAddEventDuration, watch-proxy will process all events without delay. error: %s. "+
 			"no delay will be applied.", resource, err.Error())
 	}
 
 	resyncDuration, err := time.ParseDuration(config.ForceReuploadDuration)
 	if err != nil {
 		resyncDuration = 0 * time.Second
-		glog.Warningf("%s: no valid forceReuploadDuration set, quartermaster will not attempt to periodically re-upload"+
+		glog.Warningf("%s: no valid forceReuploadDuration set, watch-proxy will not attempt to periodically re-upload"+
 			" all kubernetes objects.", resource)
 	}
 

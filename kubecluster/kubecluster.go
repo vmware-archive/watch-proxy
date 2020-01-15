@@ -14,8 +14,8 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/vmware-tanzu-private/quartermaster/config"
-	"github.com/vmware-tanzu-private/quartermaster/inventory"
+	"github.com/vmware-tanzu/watch-proxy/config"
+	"github.com/vmware-tanzu/watch-proxy/inventory"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -31,7 +31,7 @@ var (
 
 // StartWatchers creates all informers needed to satisfy the desired objects to keep a watch on, as
 // described in the config. It expects a kubernetes client for which rest clients will be derived,
-// the configuration of quartermaster, and a processing queue where all objects that triggered
+// the configuration of watch-proxy, and a processing queue where all objects that triggered
 // events will be stored.
 func StartWatchers(client *kubernetes.Clientset, c config.Config,
 	processorQueue workqueue.RateLimitingInterface) InformerClients {

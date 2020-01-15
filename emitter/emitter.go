@@ -1,4 +1,4 @@
-// Copyright 2018-2019 VMware, Inc. 
+// Copyright 2018-2019 VMware, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package emitter
@@ -22,14 +22,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/golang/glog"
-	"github.com/vmware-tanzu-private/quartermaster/config"
-	"github.com/vmware-tanzu-private/quartermaster/metrics"
 	"github.com/patrickmn/go-cache"
+	"github.com/vmware-tanzu/watch-proxy/config"
+	"github.com/vmware-tanzu/watch-proxy/metrics"
 )
 
 const (
 	cacheCleanupInterval = 1 * time.Minute
-	cacheFileName        = "/quartermaster/cache.gob"
+	cacheFileName        = "/watch-proxy/cache.gob"
 	emitObjectMaxDefault = 10
 	EmitIntervalDefault  = 1
 )
@@ -245,7 +245,7 @@ func process(emissions []Emission, c config.Config) {
 			emissions[i].EmittableList = []EmitObject{}
 		}
 
-		err := exec.Command("touch", "/quartermaster/emitting").Run()
+		err := exec.Command("touch", "/watch-proxy/emitting").Run()
 		if err != nil {
 			glog.Errorf("failed to touch emitting file for liveness check. error: %s", err)
 		} else {
@@ -443,8 +443,8 @@ func filter(list []string, o EmitObject) (bool, error) {
 		return true, nil
 	}
 
-	// Example selfLink: "/apis/extensions/v1beta1/namespace/heptio-qm/deployments/quartermaster"
-	// selfLink: /api/v1/namespace/heptio-qm/services/status-aggregator
+	// Example selfLink: "/apis/extensions/v1beta1/namespace/tanzu-watch-proxy/deployments/watch-proxy"
+	// selfLink: /api/v1/namespace/tanzu-watch-proxy/services/status-aggregator
 	metadata := o.Payload["metadata"].(map[string]interface{})
 	selfLink := metadata["selfLink"].(string)
 
