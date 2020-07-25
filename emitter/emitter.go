@@ -270,11 +270,7 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 		case "sqs":
 			emission.Svc = createAWSClient(endpoint)
 			emission.SqsUrl = endpoint.Url
-		case "http":
-			emission.HttpUrl = endpoint.Url
-			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
-			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
-		case "vro":
+		case "http", "vro":
 			emission.HttpUrl = endpoint.Url
 			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
 			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
