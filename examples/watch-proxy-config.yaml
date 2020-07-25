@@ -34,6 +34,12 @@ data:
       url: http://echo2/watch-proxy
       usernameVar: USERNAME2
       passwordVar: PASSWORD2
+    #- type: vro
+    #  url: https://vro.example.com/vco/api/workflows/<workflow_id>/executions
+    #  usernameVar: USERNAME2
+    #  passwordVar: PASSWORD2
+    #  resourceTypes:
+    #  - namespaces
     metadata:
       platform: baremetal
       region: east
