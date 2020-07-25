@@ -62,7 +62,7 @@ Configuration for Watch-Proxy is done via a config file, which, when deployed to
     - `type` The type of endpoint.  The following are supported:
         * `http` An HTTP or HTTPS REST API endpoint.
         * `sqs` An AWS [Simple Queue Service](https://aws.amazon.com/sqs/) endpoint.
-        * `vro` An HTTP or HTTPS VMware vRealize Orchestrator REST API endpoint.
+        * `vro` An HTTP or HTTPS VMware vRealize Orchestrator REST API endpoint. The target vRO workflow must have an input parameter `input` of type `string`.
     - `url` A standard URL that Watch-Proxy can reach, e.g. https://myendpoint/watch-proxy
     - `usernameVar` A basic auth username used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
     - `passwordVar` A basic auth password used to authenticate at the remote endpoint. If you use this option you must also define an `env` with the same `name` in your deployment manifest, perferably referenced from a secret.
