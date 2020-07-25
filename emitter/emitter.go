@@ -64,7 +64,19 @@ type Wrapper struct {
 
 type PayloadRoot struct {
 	Data     []Wrapper              `json:"data"`
-	Metadata map[string]interface{} `json:"meta"`
+	Metadata map[string]interface{} `json:"meta"`	
+}
+
+type vroInput struct {
+	Parameters []struct {
+		Value struct {
+			String struct {
+				Value string `json:"value"`
+			} `json:"string"`
+		} `json:"value"`
+		Type string `json:"type"`
+		Name string `json:"name"`
+	} `json:"parameters"`
 }
 
 var (
@@ -90,6 +102,62 @@ func EmitChanges(emission Emission) {
 		return
 	}
 
+	req, err := http.NewRequest("POST", emission.HttpUrl, bytes.NewBuffer(jsonBody))
+	if len(emission.Username) > 0 {
+		req.SetBasicAuth(emission.Username, emission.Password)
+		glog.Infof("using username %s to authenticate", emission.Username)
+	} else {
+		glog.Infof("no username detected: %s", emission.Username)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := emission.Client.Do(req)
+	if err != nil {
+		glog.Errorf("failed to send http(s) request. error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	glog.Infof("response status code from remote endpoint: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			glog.Errorf("failed to read response body from remote endpoint: %s", err)
+		}
+		glog.Infof("response body from remote endpoint: %s", string(bodyBytes))
+	} else {
+		// record all successfully emitted objects for hash comparison
+		for _, entry := range emission.EmittableList {
+			recordEmitted(entry)
+			glog.Infof("[%s]: emitted.", entry.Key)
+		}
+
+		// increment payload emission counter for prometheus metrics
+		metrics.PayloadCount.Inc()
+	}
+}
+
+// EmitChanges sends a json payload of cluster changes to a remote endpoint
+func EmitChangesVRO(emission Emission) {
+	dataToEmit := []Wrapper{}
+	for _, data := range emission.EmittableList {
+		dataToEmit = append(dataToEmit, Wrapper{lookupAssetId(data.ObjType), data.Payload, data.UID, data.EventType})
+	}
+	payloadRoot := &PayloadRoot{Data: dataToEmit, Metadata: metadata}
+
+	jsonInput := []byte(`{"parameters": [{"value": {"string": {"value": ""}},"type": "string","name": "input"}]}`)
+	var newVroInput vroInput
+	json.Unmarshal(jsonInput, &newVroInput)
+
+	payloadRootStr, err := json.Marshal(payloadRoot)
+	newVroInput.Parameters[0].Value.String.Value = string(payloadRootStr)
+	
+	jsonBody, err := json.Marshal(newVroInput)
+
+	if err != nil {
+		glog.Errorf("failed to marshal to-be-emitted object. error: %s", err)
+		return
+	}
+	
 	req, err := http.NewRequest("POST", emission.HttpUrl, bytes.NewBuffer(jsonBody))
 	if len(emission.Username) > 0 {
 		req.SetBasicAuth(emission.Username, emission.Password)
@@ -206,6 +274,10 @@ func StartEmitter(c config.Config, q chan EmitObject) {
 			emission.HttpUrl = endpoint.Url
 			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
 			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
+		case "vro":
+			emission.HttpUrl = endpoint.Url
+			emission.Username = strings.TrimSuffix(os.Getenv(endpoint.UsernameVar), "\n")
+			emission.Password = strings.TrimSuffix(os.Getenv(endpoint.PasswordVar), "\n")
 		default:
 			glog.Fatalf("endpoint type %s not supported", endpoint.Type)
 		}
@@ -316,6 +388,11 @@ func emitWhenReady(emissions []Emission, c config.Config) {
 
 			if emission.EmitType == "sqs" {
 				EmitChangesSQS(emission)
+				return
+			}
+
+			if emission.EmitType == "vro" {
+				EmitChangesVRO(emission)
 				return
 			}
 
