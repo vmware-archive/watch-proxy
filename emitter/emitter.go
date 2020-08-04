@@ -136,7 +136,7 @@ func EmitChanges(emission Emission) {
 	}
 }
 
-// EmitChanges sends a json string payload of cluster changes to a vRO remote endpoint
+// EmitChangesVRO sends a json string payload of cluster changes to a vRO remote endpoint
 func EmitChangesVRO(emission Emission) {
 	dataToEmit := []Wrapper{}
 	for _, data := range emission.EmittableList {
